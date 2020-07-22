@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gaia-ta3-pod
+spec:
+  volumes:
+    - name: input-efs
+      nfs:
+        server: fs-5d7f79de.efs.us-east-1.amazonaws.com #TA2-OPERA_TA1a_hans_V2.GAIA_1-OUTPUT (fs-5d7f79de)
+        path: /
+    - name: output-efs
+      nfs:
+        server: fs-eb717768.efs.us-east-1.amazonaws.com #teamgaia-ta3-output (fs-eb717768)
+        path: /
+    - name: sin-efs
+      nfs:
+        server: fs-e192a262.efs.us-east-1.amazonaws.com #RERUN_SIN
+        path: /SIN        
+  initContainers:
+    - name: gaia-ta3-con
+      image: dsrtempdockerhub/aida-uf-hypogator-docker:0.4
+      env:
+      - name: INPUT
+        value: /input
+      - name: OUTPUT
+        value: /output
+      - name: SIN
+        value: /sin      
+      volumeMounts:
+        - name: input-efs
+          mountPath: "/input"
+          readOnly: true
+        - name: output-efs
+          mountPath: "/output"
+        - name: sin-efs
+          mountPath: "/sin"
+          readOnly: true             
+      securityContext:
+        privileged: true        
+  containers:
+  - name: finalizer
+    image: nextcenturycorp/verdi_finalizer:latest
+    args: ["/output", "aida-phase2-ta-performers", "GAIA-TA3-ReRun", "--prefix", "TA3-GAIA"]
+    envFrom:
+    - configMapRef:
+        name: env-configmap
+    - secretRef:
+        name: env-secrets
+    volumeMounts:
+      - name: input-efs
+        mountPath: "/input"
+      - name: output-efs
+        mountPath: "/output"        
+  restartPolicy: Never
+  imagePullSecrets:
+    - name: regcred       
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
+
