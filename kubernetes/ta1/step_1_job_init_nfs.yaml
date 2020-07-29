@@ -1,0 +1,24 @@
+apiVersion: v1 #batch/v1
+kind: Pod
+metadata:
+  name: mkdir-gaia-ta1
+spec:
+  # template:
+    # spec:
+      volumes:
+        - name: nfs-output
+          nfs:
+            server: 10.99.39.187
+            path: /
+        
+      containers:
+        - name: mkdir           
+          image: ubuntu 
+          command: ["/bin/bash" , "-c"]
+          args: [ "mkdir -p /outputs/GAIA-TA1-TestRun_output/WORKING/data/db;" ] 
+          volumeMounts:
+            - name: nfs-output
+              mountPath: /outputs
+              readOnly: false
+            
+      restartPolicy: Never

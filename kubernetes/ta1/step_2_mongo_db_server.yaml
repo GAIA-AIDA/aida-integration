@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-server
+  labels: 
+    app: mongo  
+spec:
+  selector:
+    matchLabels:
+      run: mongo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: mongo
+    spec:
+      volumes:
+        - name: output-volume
+          nfs:
+            server:  10.99.39.187   #This should be set to the nfs server address #fs-36694db5.efs.us-east-1.amazonaws.com #LDC2019E42-efs
+            path: /
+
+      containers:
+        - name: db
+          image: mongo
+          ports: 
+            - containerPort: 27017
+          volumeMounts:
+            - name: output-volume
+              mountPath: /storage
+              
+      #nodeSelector:
+        #eks.amazonaws.com/nodegroup: gaia-eks-nodegroup

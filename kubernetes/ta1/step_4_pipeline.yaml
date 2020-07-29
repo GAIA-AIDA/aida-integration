@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nominal-coreference
+  labels:
+    name: nominal-coreference
+spec:
+  containers:
+    - name: nominal-coreference
+      image: wangqy96/aida_nominal_coreference_en
+      workingDir: /aida_nominal_coreference_en
+      command: ["python", "nominal_backend.py"]    
+      ports:
+      - containerPort: 2468
+  # nodeSelector:
+  #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup    
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aida-entity
+  labels:
+    name: aida-entity
+spec:
+  containers:
+  - name: aida-entity
+    image: limanling/uiuc_ie_m18
+    workingDir: /entity_api
+    command: ["/opt/conda/envs/aida_entity/bin/python", "/entity_api/entity_api/app.py"]    
+    ports:
+    - containerPort: 5500
+  # nodeSelector:
+  #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup    
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: event-coreference-en
+  labels:
+    name: event-coreference-en
+spec:
+  containers:
+  - name: event-coreference-en
+    image: dylandilu/event_coreference_xdoc
+    workingDir: /event_coreference_xdoc
+    command: ["python", "aida_event_coreference_backen_eng.py"]    
+    ports:
+    - containerPort: 6001
+  # nodeSelector:
+  #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: event-coreference-ru
+  labels:
+    name: event-coreference-ru
+spec:
+  containers:
+  - name: event-coreference-ru
+    image: dylandilu/event_coreference_xdoc
+    workingDir: /event_coreference_xdoc
+    command: ["python", "aida_event_coreference_backen_rus.py"]    
+    ports:
+    - containerPort: 6101
+  # nodeSelector:
+  #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: event-coreference-ukr
+  labels:
+    name: event-coreference-ukr
+spec:
+  containers:
+  - name: event-coreference-ukr
+    image: dylandilu/event_coreference_xdoc
+    workingDir: /event_coreference_xdoc
+    command: ["python", "aida_event_coreference_backen_ukr.py"]    
+    ports:
+    - containerPort: 6201
+  # nodeSelector:
+  #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup    

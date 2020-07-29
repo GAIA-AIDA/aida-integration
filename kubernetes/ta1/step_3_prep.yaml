@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mkdir-aida-edl
+spec:
+  template:
+    spec:
+      volumes:
+        - name: input-volume
+          nfs:
+            server: 10.105.45.53 #fs-36694db5.efs.us-east-1.amazonaws.com 
+            path: /
+        - name: output-volume
+          nfs:
+            server: 10.99.39.187 # fs-be9fce3d.efs.us-east-1.amazonaws.com #sample_gaia_ta2_output
+            path: /GAIA-TA1-TestRun_output
+      containers:
+        - name: setup-edl-data-tar           
+          image: panx27/data-processor 
+          command: ["/bin/bash", "-c"]
+          args:
+           - mkdir -p /output/WORKING/system/aida_edl; 
+             wget http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl; 
+             tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data
+          volumeMounts:
+            - name: input-volume
+              mountPath: /input
+              readOnly: true
+            - name: output-volume
+              mountPath: /output #Please put your output here            
+      restartPolicy: Never
+      # nodeSelector:
+      #   eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
