@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  selector:
+    run: mongo
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -16,10 +27,14 @@ spec:
         run: mongo
     spec:
       volumes:
+        # - name: input-efs
+          # nfs:
+            # server: fs-36694db5.efs.us-east-1.amazonaws.com #LDC2019E42-efs # sudo mount -t efs -o tls fs-36694db5:/ efs2
+            # path: /
         - name: input-efs
           nfs:
-            server: fs-36694db5.efs.us-east-1.amazonaws.com #LDC2019E42-efs
-            path: /
+            server: fs-3971b7bb.efs.us-east-1.amazonaws.com #LDC2019E42-SMALL-efs (10 documents for lang)# sudo mount -t efs -o tls fs-3971b7bb:/ efs
+            path: /     
         - name: output-efs # Modify for you output setup, example uses NFS
           nfs:
             server: fs-b7bb8534.efs.us-east-1.amazonaws.com #teamgaia-ta1-output
@@ -37,90 +52,99 @@ spec:
               mountPath: /data/db
       nodeSelector:
         eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: fs-setup
-spec:
-  template:
-    spec:
-      volumes:
-        - name: input-efs
-          nfs:
-            server: fs-36694db5.efs.us-east-1.amazonaws.com #LDC2019E42-efs
-            path: /
-        - name: output-efs
-          nfs:
-            server: fs-b7bb8534.efs.us-east-1.amazonaws.com #teamgaia-ta1-output
-            path: /
-      containers:
-        # - name: mkdir-aida-edl 
+#force redeployment(bash): kubectl patch deployment mongo -p "{\"spec\": {\"template\": {\"metadata\": { \"labels\": {  \"redeploy\": \"$(date +%s)\"}}}}}"
+# ---
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+  # name: fs-setup
+# spec:
+  # template:
+    # spec:
+      # volumes:
+        # - name: input-efs
+          # nfs:
+            # server: fs-36694db5.efs.us-east-1.amazonaws.com #LDC2019E42-efs
+            # path: /
+        # - name: output-efs
+          # nfs:
+            # server: fs-b7bb8534.efs.us-east-1.amazonaws.com #teamgaia-ta1-output
+            # path: /
+      # containers:
+        # - name: setup-edl-rsd         
           # image: limanling/uiuc_ie_m18
-          # command: ["mkdir", "-p", "/output/system/aida_edl"]
+          # command: ["/bin/bash", "-c"]
+          # args:
+           # - mkdir -p /output/WORKING/system/aida_edl; 
+             # wget http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl; 
+             # tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
+             # mkdir -p /output/WORKING/system/rsd;
+             # perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf;
           # volumeMounts:
             # - name: input-efs
               # mountPath: /input
               # readOnly: true
             # - name: output-efs
-              # mountPath: /output
-        #docker run --rm -v `pwd`:`pwd` -w `pwd` -i limanling/uiuc_ie_m18 mkdir -p ${PWD}/system/aida_edl
-        #docker run -v ${PWD}/system/aida_edl:/data panx27/data-processor wget http://159.89.180.81/demo/resources/edl_data.tar.gz -P /data
-        #docker run -v ${PWD}/system/aida_edl:/data panx27/data-processor tar zxvf /data/edl_data.tar.gz -C /data
-        #generate rsd
-        #docker run --rm -v ${ldc_data}:${ldc_data} -v ${ltf_dir}:${ltf_dir} -i limanling/uiuc_ie_m18 mkdir -p ${ltf_dir}
-        #docker run --rm -v ${ldc_data}:${ldc_data} -v ${ltf_dir}:${ltf_dir} -i limanling/uiuc_ie_m18 unzip -o ${ldc_data}/data/ltf/\*.zip -d ${ltf_dir}
-        #docker run --rm -v ${ldc_data}:${ldc_data} -v ${ltf_dir}:${ltf_dir} -v ${rsd_dir}:${rsd_dir} -w `pwd` -i limanling/uiuc_ie_m18 perl ${ldc_data}/tools/ltf2txt/ltf2rsd.perl -o ${rsd_dir} ${ltf_dir}        
-        - name: setup-edl-rsd         
-          image: limanling/uiuc_ie_m18
-          command: ["/bin/bash", "-c"]
-          args:
-           - mkdir -p /output/WORKING/system/aida_edl; 
-             wget http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl; 
-             tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
-             mkdir -p /output/WORKING/system/rsd;
-             perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf;
-          volumeMounts:
-            - name: input-efs
-              mountPath: /input
-              readOnly: true
-            - name: output-efs
-              mountPath: /output #Please put your output here            
-      restartPolicy: Never
-      nodeSelector:
-        eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
+              # mountPath: /output #Please put your output here            
+      # restartPolicy: Never
+      # nodeSelector:
+        # eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
 ---
-#docker run -d -i --rm -w /aida_nominal_coreference_en -p 2468:2468 --name nominal_coreference wangqy96/aida_nominal_coreference_en python nominal_backend.py
+apiVersion: v1
+kind: Service
+metadata:
+  name: nominal-coreference
+spec:
+  ports:
+    - port: 2468
+      targetPort: 2468
+  selector:
+    app: nominal-coreference
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nominal-coreference
+  name: nominal-coreference-pod
   labels:
-    name: nominal-coreference
+    app: nominal-coreference
 spec:
   containers:
-    - name: nominal-coreference
-      image: wangqy96/aida_nominal_coreference_en
-      workingDir: /aida_nominal_coreference_en
-      command: ["python", "nominal_backend.py"]    
-      ports:
-      - containerPort: 2468
+  - name: nominal-coreference
+    image: wangqy96/aida_nominal_coreference_en
+    securityContext:
+      privileged: true
+    workingDir: /aida_nominal_coreference_en
+    command: ["/opt/conda/envs/aida_coreference/bin/python", "nominal_backend.py"]    
+    ports:
+    - containerPort: 2468
   nodeSelector:
     eks.amazonaws.com/nodegroup: gaia-eks-nodegroup    
 ---
-#docker run -d -i --rm --name uiuc_ie_m18 -w /entity_api -p 5500:5500 --name aida_entity limanling/uiuc_ie_m18 \
-#    /opt/conda/envs/aida_entity/bin/python \
-#    /entity_api/entity_api/app.py
+apiVersion: v1
+kind: Service
+metadata:
+  name: aida-entity
+spec:
+  ports:
+    - port: 5500
+      targetPort: 5500
+  selector:
+    app: aida-entity
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: aida-entity
+  name: aida-entity-pod
   labels:
-    name: aida-entity
+    app: aida-entity
 spec:
   containers:
   - name: aida-entity
     image: limanling/uiuc_ie_m18
+    securityContext:
+      privileged: true
     workingDir: /entity_api
     command: ["/opt/conda/envs/aida_entity/bin/python", "/entity_api/entity_api/app.py"]    
     ports:
@@ -128,17 +152,30 @@ spec:
   nodeSelector:
     eks.amazonaws.com/nodegroup: gaia-eks-nodegroup    
 ---
-#docker run -d -i --rm -w /event_coreference_xdoc -p 6001:6001 --name event_coreference_en dylandilu/event_coreference_xdoc python aida_event_coreference_backen_eng.py
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-coreference-en
+spec:
+  ports:
+    - port: 6001
+      targetPort: 6001
+  selector:
+    app: event-coreference-en
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: event-coreference-en
+  name: event-coreference-en-pod
   labels:
-    name: event-coreference-en
+    app: event-coreference-en
 spec:
   containers:
   - name: event-coreference-en
     image: dylandilu/event_coreference_xdoc
+    securityContext:
+      privileged: true
     workingDir: /event_coreference_xdoc
     command: ["python", "aida_event_coreference_backen_eng.py"]    
     ports:
@@ -146,35 +183,61 @@ spec:
   nodeSelector:
     eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
 ---
-#docker run -d -i --rm -w /event_coreference_xdoc -p 6101:6101 --name event_coreference_ru dylandilu/event_coreference_xdoc python aida_event_coreference_backen_rus.py
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-coreference-ru
+spec:
+  ports:
+    - port: 6101
+      targetPort: 6301
+  selector:
+    app: event-coreference-ru 
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: event-coreference-ru
+  name: event-coreference-ru-pod
   labels:
-    name: event-coreference-ru
+    app: event-coreference-ru
 spec:
   containers:
   - name: event-coreference-ru
     image: dylandilu/event_coreference_xdoc
+    securityContext:
+      privileged: true
     workingDir: /event_coreference_xdoc
     command: ["python", "aida_event_coreference_backen_rus.py"]    
     ports:
-    - containerPort: 6101
+    - containerPort: 6301
   nodeSelector:
     eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
 ---
-#docker run -d -i --rm -w /event_coreference_xdoc -p 6201:6201 --name event_coreference_uk dylandilu/event_coreference_xdoc python aida_event_coreference_backen_ukr.py
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-coreference-uk
+spec:
+  ports:
+    - port: 6201
+      targetPort: 6201
+  selector:
+    app: event-coreference-uk 
+  type: ClusterIP
+---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: event-coreference-ukr
+  name: event-coreference-uk-pod
   labels:
-    name: event-coreference-ukr
+    app: event-coreference-uk
 spec:
   containers:
-  - name: event-coreference-ukr
+  - name: event-coreference-uk
     image: dylandilu/event_coreference_xdoc
+    securityContext:
+      privileged: true
     workingDir: /event_coreference_xdoc
     command: ["python", "aida_event_coreference_backen_ukr.py"]    
     ports:
