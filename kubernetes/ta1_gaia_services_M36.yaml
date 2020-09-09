@@ -144,10 +144,13 @@ spec:
   containers:
   - name: aida-entity
     image: limanling/uiuc_ie_m36
+    imagePullPolicy: "Always"
     securityContext:
       privileged: true
     workingDir: /entity_api
-    command: ["/opt/conda/envs/aida_entity/bin/python", "/entity_api/entity_api/app.py", "--eval m36"]    
+    command: ["/bin/bash", "-c"]
+    args:
+      - "/opt/conda/envs/aida_entity/bin/python /entity_api/entity_api/app.py --eval m36"
     ports:
     - containerPort: 5500
   nodeSelector:
