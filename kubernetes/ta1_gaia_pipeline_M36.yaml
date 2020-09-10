@@ -10,11 +10,11 @@ spec:
       volumes:
         - name: input-efs
           nfs:
-            server: fs-3971b7bb.efs.us-east-1.amazonaws.com #LDC2019E42-SMALL-efs (10 documents for each lang)# sudo mount -t efs -o tls fs-3971b7bb:/ efs
+            server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL
             path: /            
         - name: output-efs
           nfs:
-            server: fs-b7bb8534.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t efs -o tls fs-b7bb8534:/ efs
+            server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t
             path: /
         #If you want to use a local folder as a volume, you can remove the NFS above and recreate them with a local volume for testing. The names need to match with the volumeMounts of the container
         # - name: input-efs
