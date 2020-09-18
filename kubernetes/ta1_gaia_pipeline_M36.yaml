@@ -446,6 +446,7 @@ spec:
       - name: edl-entity-extraction
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
+# TODO DAN how do we run this on docker using '--gpus device=1'
         env:
         #ENGLISH
         - name: lang
@@ -481,6 +482,7 @@ spec:
           value: "merged_fine.tsv"
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
+# TODO DAN All UK needs to be changed to Spanish, ES 
         #UKRANIAN
         - name: lang_uk
           value: "uk"
@@ -618,6 +620,7 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 4 # requesting 1 GPU
+# TODO DAN how do we run this on docker using '--gpus device=1', does the line above accomplish this?
 ################################
 ## ENGLISH tab2cs
 ################################
@@ -736,6 +739,7 @@ spec:
           value: "/output/WORKING/data/ru/edl"
         - name: relation_cs_coarse_ru
           value: "/output/WORKING/data/ru/relation/ru.rel.cs"
+# ALL UK needs to be changed to ES
         #UKRANIAN
         - name: lang_uk
           value: "uk"
@@ -759,6 +763,8 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+#TODO DAN above needs to run  --gpus device=1  too
 
 ################################
 ## Filler Extraction & new relation
@@ -934,6 +940,8 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+# TODO DAN above also needs  --gpus device=1 
 
 ################################
 ## RU/UK - extracting events
@@ -1133,10 +1141,29 @@ spec:
             ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/events_tme.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json 
             ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
+
+# TODO: between # Relation Extraction (fine) and  ## Postprocessing, adding informative justification the following needs to be inserted:
+
+#relation_4tuple=${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs
+#docker run -i -t --rm -v ${data_root}:${data_root} \
+#    -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#    -w /EventTimeArg --gpus device=1 wenhycs/uiuc_event_time \
+#    python aida_event_time_pipeline.py \
+#    --relation_cold_start_filename ${relation_cs_fine} --relation \
+#    --parent_children_filename ${parent_child_tab_path} \
+#    --output_filename ${relation_4tuple}
+
+
+
             echo `date` - "add protester";
             /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/en.event.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs;
             echo `date` - "** Informative Justification **";
             /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir}/chunk.txt ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs;
+
+# TODO: the above line entity_informative.py needs to be replaced with:
+# docker run --rm -v ${data_root}:${data_root} -i panx27/aida20_mention \
+#  python ./extend.py ${lang} ${ltf_source} ${edl_cs_fine_protester} ${edl_cs_info}
+
             echo `date` - "Completed entity_informative.py";
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom} 
             ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs 
@@ -1183,6 +1210,8 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST) 
+
+#TODO: DAN all of the above --gpus device=1 
 
 ################################
 ## EN - Event (Fine-grained)
@@ -1445,15 +1474,27 @@ spec:
 #          value: /input/docs/parent_children.tab
         command: ["/bin/bash", "-c"]
         args:
+
+#TODO: before pipeline_merge run this:
+#docker run -i -t --rm -v ${data_root}:${data_root} \
+#    -v ${parent_child_tab_path}:${parent_child_tab_path} \	    -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#    -w /EventTimeArg --gpus all wenhycs/uiuc_event_time \	    -w /EventTimeArg --gpus device=2 wenhycs/uiuc_event_time \
+#    python aida_event_time_pipeline.py \	    python aida_event_time_pipeline.py \
+#    --time_cold_start_filename ${filler_coarse} \	    --time_cold_start_filename ${filler_coarse} \
+#    --event_cold_start_filename ${event_corefer} \	    --event_cold_start_filename ${event_corefer} \
+#
+
           - echo `date` - "** Merging all items **";
             /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
-            --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36;
+# change pipeline merge to use these params:
+#    --cs_fnames ${edl_cs_info_conf} ${edl_cs_color} ${relation_4tuple} ${event_final} \ 
+           --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36;
             echo `date` - "multiple freebase links";
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_freebase.py
             ${edl_output_dir}/${lang}.linking.freebase.tab ${data_root}/${lang}${source}_full.cs ${edl_output_dir}/freebase_private_data.json;
             echo `date` - "multiple lorelei links";
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_confidence.py 
-            ${edl_output_dir}/${lang}.linking.tab.candidates.json ${data_root}/${lang}${source}_full.cs ${data_root}/${lang}${source}_full_link.cs ${edl_output_dir}/lorelei_private_data.json;
+            ${edl_output_dir}/${lang}.linking.tab.candidates.json ${data_root}/${lang}${source}_full.cs ${data_root}/${lang}${source}_full_link.cs ${edl_output_dir}/lorelei_private_data.json --eval m36;
             echo `date` - "** Format converter **";
             echo `date` - "Start AIF converter";
             /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter.py 
