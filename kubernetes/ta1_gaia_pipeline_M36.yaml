@@ -1,11 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: gaia-ta1-pipeline
+ name: gaia-ta1-pipeline
 spec:
+  backoffLimit: 0
   template:
-    metadata:
-      name: gaia-ta1-pipeline
+ #   metadata:
+ #     name: gaia-ta1-pipeline
     spec:
       volumes:
         - name: input-efs
@@ -25,8 +26,28 @@ spec:
           # path: "C:/some/local/output" 
       initContainers:
 ################################
-## detect-lang
+## setup-edl-rsd  
 ################################
+      - name: setup-edl-rsd
+        image: limanling/uiuc_ie_m36
+        command: ["/bin/bash", "-c"]
+        args:
+         - mkdir -p /output/WORKING/system/data; 
+           mkdir -p /output/WORKING/system/aida_edl; 
+           mkdir -p /output/WORKING/system/rsd;
+           wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl; 
+           tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
+           perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf;
+        volumeMounts:
+          - name: input-efs
+            mountPath: /input
+            readOnly: true
+          - name: output-efs
+            mountPath: /output #Please put your output here     
+  
+###############################
+# detect-lang
+###############################
       - name: detect-lang
         image: limanling/uiuc_ie_m36
         command: ["/opt/conda/envs/py36/bin/python", "/preprocessing/preprocess_detect_languages.py", "/output/WORKING/system/rsd", "/input/data/ltf", "/output/WORKING/data"]
@@ -168,7 +189,13 @@ spec:
           value: "0"
         command: ["/bin/bash", "-c"]
         args:
-          - /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source} ${edl_bio};
+          - mkdir -p /output/WORKING/data/uk/ltf;
+            mkdir -p /output/WORKING/data/en/ltf;
+            mkdir -p /output/WORKING/data/ru/ltf;
+            mkdir -p /output/WORKING/data/uk/edl;
+            mkdir -p /output/WORKING/data/en/edl;
+            mkdir -p /output/WORKING/data/ru/edl;
+            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source} ${edl_bio};
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source} ${rsd_file_list};
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source} ${ltf_file_list};
             /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab};
@@ -537,8 +564,8 @@ spec:
           - ln -s /output/WORKING/data/edl_data /data;
             python ./projs/docker_aida19/aida19.py ${lang} ${edl_output_dir}/${edl_tab_nam_filename} ${edl_output_dir}/${edl_tab_nom_filename} ${edl_output_dir}/${edl_tab_pro_filename} ${edl_output_dir} m36 &
             python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_output_dir_ru}/${edl_tab_nam_filename_ru} ${edl_output_dir_ru}/${edl_tab_nom_filename_ru} ${edl_output_dir_ru}/${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
-#UK            python ./projs/docker_aida19/aida19.py ${lang_uk} ${edl_output_dir_uk}/${edl_tab_nam_filename_uk} ${edl_output_dir_uk}/${edl_tab_nom_filename_uk} ${edl_output_dir_uk}/${edl_tab_pro_filename_uk} ${edl_output_dir_uk} m36 &
             wait
+          #UK            python ./projs/docker_aida19/aida19.py ${lang_uk} ${edl_output_dir_uk}/${edl_tab_nam_filename_uk} ${edl_output_dir_uk}/${edl_tab_nom_filename_uk} ${edl_output_dir_uk}/${edl_tab_pro_filename_uk} ${edl_output_dir_uk} m36 &
           #NOTE: why is there a testdata_? Was this just part of a testing script?
         volumeMounts:
           - name: input-efs
@@ -546,12 +573,13 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)    
-            
+       
 ################################
 ## ENGLISH edl-nominal-conference
 ################################
       - name: edl-nominal-conference-en
         image: wangqy96/aida_nominal_coreference_en
+        workingDir: /aida_nominal_coreference_en #Phi 20200916 added 
         imagePullPolicy: IfNotPresent
         env:
         - name: use_nominal_corefer
@@ -575,9 +603,11 @@ spec:
 #    --dev_f ${edl_tab_link_fb} \
 #    --out_e ${edl_tab_final}
 ### TODO: not sure what this sed command is doing but the next command is updated based on m36 changes.
-          - sed -i 's/127.0.0.1/nominal-coreference/' /entity/aida_edl/nominal_corefer_en.py;
-            /opt/conda/envs/aida_coreference/bin/python /aida_nominal_coreference_en/gail_nominal_no_web_py --dev ${edl_bio} --dev_e ${edl_output_dir}/${lang}.linking.tab --dev_f ${edl_output_dir}/${lang}.linking.freebase.tab --out_e ${edl_output_dir}/merged_final.tab;
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL'
+####Phi 20200916 looks like nominial conference service was removed
+####Phi 20200916 No longer needed; sed -i 's/127.0.0.1/nominal-coreference/' /entity/aida_edl/nominal_corefer_en.py;
+####Phi 20200916 Fixed typo below: gail_nominal_no_web_py -> gail_nominal_no_web.py
+
+          - /opt/conda/envs/aida_coreference/bin/python /aida_nominal_coreference_en/gail_nominal_no_web.py --dev ${edl_bio} --dev_e ${edl_output_dir}/${lang}.linking.tab --dev_f ${edl_output_dir}/${lang}.linking.freebase.tab --out_e ${edl_output_dir}/merged_final.tab;
         #NOTE:/entity/aida_edl/nominal_corefer_en.py - line 25 -  r = requests.post('http://127.0.0.1:2468/aida_nominal_coreference_en', json=json_string) ->  r = requests.post('http://nominal-coreference:2468/aida_nominal_coreference_en', json=json_string)
         volumeMounts:
           - name: input-efs
@@ -585,6 +615,29 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)    
+        resources:
+          limits:
+            nvidia.com/gpu: 4 # requesting 1 GPU
+################################
+## ENGLISH tab2cs
+################################
+#Phi added 20200916, cant be a part of above anymore since it's a difference image now
+      - name: tab2cs
+        image: limanling/uiuc_ie_m36
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: edl_output_dir
+          value: "/output/WORKING/data/en/edl"
+        command: ["/bin/bash", "-c"]
+        args:
+          - /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL'
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)  
+
 
 ################################
 ## RU/UK edl-nominal-conference-tabcs
@@ -824,9 +877,6 @@ spec:
             ${edl_output_dir_ru}/merged_fine.tsv ${edl_output_dir_ru}/${lang_ru}.linking.geo.json ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs 
             --filler_coarse ${edl_output_dir_ru}/filler_${lang_ru}.cs --ground_truth_tab_dir ${edl_output_dir_ru}/ldc_anno_matched --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --eval m36 &
             
-#            /opt/conda/envs/py36/bin/python /entity/aida_edl/fine_grained_entity.py ${lang_uk} ${edl_output_dir_uk}/${lang_uk}.linking.freebase.fine.json ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab 
-#            ${edl_output_dir_uk}/merged_fine.tsv ${edl_output_dir_uk}/${lang_uk}.linking.geo.json ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/merged_fine.cs ${edl_output_dir_uk}/filler_fine.cs 
-#            --filler_coarse ${edl_output_dir_uk}/filler_${lang_uk}.cs --ground_truth_tab_dir ${edl_output_dir_uk}/ldc_anno_matched --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} &
             wait;
             echo `date` - "Completed fine_grained_entity.py";
 
@@ -836,10 +886,18 @@ spec:
             /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_ru}/${lang_ru}.linking.col.tab 
             --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_ru}.cs --en_combo_outfname ${edl_output_dir_ru}/filler_${lang_ru}_all.cs --en_color_outfname ${edl_output_dir_ru}/${lang_ru}.color.cs &
             
-#            /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_uk}/${lang_uk}.linking.col.tab 
-#            --en_fill_cs_fname ${edl_output_dir_uk}/filler_${lang_uk}.cs --en_combo_outfname ${edl_output_dir_uk}/filler_${lang_uk}_all.cs --en_color_outfname ${edl_output_dir_uk}/${lang_uk}.color.cs &
             wait;
             echo `date` - "Completed color_fillers.py";
+
+#Phi 20200916 moved comments out of statement
+#            /opt/conda/envs/py36/bin/python /entity/aida_edl/fine_grained_entity.py ${lang_uk} ${edl_output_dir_uk}/${lang_uk}.linking.freebase.fine.json ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab 
+#            ${edl_output_dir_uk}/merged_fine.tsv ${edl_output_dir_uk}/${lang_uk}.linking.geo.json ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/merged_fine.cs ${edl_output_dir_uk}/filler_fine.cs 
+#            --filler_coarse ${edl_output_dir_uk}/filler_${lang_uk}.cs --ground_truth_tab_dir ${edl_output_dir_uk}/ldc_anno_matched --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} &
+
+
+#            /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_uk}/${lang_uk}.linking.col.tab 
+#            --en_fill_cs_fname ${edl_output_dir_uk}/filler_${lang_uk}.cs --en_combo_outfname ${edl_output_dir_uk}/filler_${lang_uk}_all.cs --en_color_outfname ${edl_output_dir_uk}/${lang_uk}.color.cs &
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -918,6 +976,13 @@ spec:
             --output_dir ${event_result_dir_ru}
             --output_event_cs ${event_result_dir_ru}/${lang_ru}.events.cs &
 
+
+            wait;
+            
+            echo `date` - "Completed extracting-events-ru-uk";
+
+#Phi 20200916 moved comments out of statement
+
 #            /opt/conda/envs/ru_event/bin/python /ru_event/${lang_uk}_event/${lang_uk}_event_backend.py
 #            --ltf_folder_path ${ltf_source_uk}
 #            --input_edl_bio_file_path ${edl_output_dir_uk}/${lang_uk}.nam.tagged.bio
@@ -926,9 +991,7 @@ spec:
 #            --output_dir ${event_result_dir_uk}
 #            --output_event_cs ${event_result_dir_uk}/${lang_uk}.events.cs &
 
-            wait;
-            
-            echo `date` - "Completed extracting-events-ru-uk";
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1284,23 +1347,32 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
             ## NOTE: /event/aida_event_coreference/gail_event_coreference_test_${lang}.py -> r = requests.post('http://127.0.0.1:6001/aida_event_coreference_eng', json=json_string) -> r = requests.post('http://event-coreference-en:6001/aida_event_coreference_eng', json=json_string)
+            # TODO: not sure how this sed command works and in the latest M36 pipeline the gail_event_coreference_test.py takes an argument -l ${lang}.
+
           - sed -i 's/127.0.0.1/event-coreference-en/' /event/aida_event_coreference/gail_event_coreference_test.py;
             echo `date` - "** Event coreference EN **";
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir}/events_fine_all_clean.cs -o ${event_result_dir}/events_corefer.cs -c ${event_result_dir}/events_corefer_confidence.tab -r ${rsd_source} -l ${lang};
             echo `date` - "Completed Event coreference";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir}/events_corefer.cs ${event_result_dir}/events_4tuple.cs;
-#            echo `date` - "Completed update 'time' format";
             /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source} ${event_result_dir}/events_4tuple.cs ${event_result_dir}/events_info.cs --eval m36;
             echo `date` - "Completed Update event informative mention";
-# TODO: not sure how this sed command works and in the latest M36 pipeline the gail_event_coreference_test.py takes an argument -l ${lang}.
             sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test_${lang_ru}.py;
             echo `date` - "** Event coreference RU **";
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test_${lang_ru}.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_results_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru};
             echo `date` - "Completed Event coreference RU";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir_ru}/events_corefer.cs ${event_result_dir_ru}/events_4tuple.cs;
-#            echo `date` - "Completed update 'time' format RU";
             /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_ru} ${event_result_dir_ru}/events_4tuple.cs ${event_result_dir_ru}/events_info.cs --eval m36;
             echo `date` - "Completed Update event informative mention RU";
+
+
+#Phi 20200916 moved comments out of statement
+
+#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir}/events_corefer.cs ${event_result_dir}/events_4tuple.cs;
+#            echo `date` - "Completed update 'time' format";
+
+#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir_ru}/events_corefer.cs ${event_result_dir_ru}/events_4tuple.cs;
+#            echo `date` - "Completed update 'time' format RU";
+
+
+
 
 #            sed -i 's/127.0.0.1/event-coreference-uk/' /event/aida_event_coreference/gail_event_coreference_test_${lang_uk}.py;
 #            echo `date` - "** Event coreference UK **";
@@ -1626,6 +1698,8 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST) 
+    
+      restartPolicy: Never
 
 
 
@@ -1647,7 +1721,7 @@ spec:
             --root_folder /output/WORKING/data
             --final_dir_name final
             --output_folder /output/INTER-TA;
-            sleep 8h
+            #sleep 8h
             #sleep is used to allow me to get into the container with: kubectl exec -it gaia-ta1-pipeline-xxxxx -c merging-results
         volumeMounts:
           - name: input-efs
