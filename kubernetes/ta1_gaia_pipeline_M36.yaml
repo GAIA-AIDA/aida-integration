@@ -46,6 +46,36 @@ spec:
             mountPath: /output #Please put your output here
 
 ###############################
+# ISI AIDA-TOOLS
+###############################
+## ISI: DPN
+## see https://hub.docker.com/repository/docker/gaiaaida/aida-tools
+## python ./extract_mp4.py ./extract_mp4.docker_default.param
+      - name: isi-aida-tools
+        image: gaiaaida/aida-tools:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo "Begin aida-tools for "${parent_child_tab};
+           ls -ahl /input/data/mp4/mp4/;
+           mkdir -p /output/WORKING/mp4/;
+           python ./extract_mp4.py ./extract_mp4.docker_default.param
+           ls -ahl /output/WORKING/mp4/;
+           echo "End aida-tools for "${parent_child_tab};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+###############################
 # OCR
 ###############################
 ## ISI: DPN; Xujun Peng
@@ -56,7 +86,29 @@ spec:
 ###############################
 ## ISI: DPN: Xujun Peng
 ## see https://github.com/isi-vista/aida-integration/#asr
+## $ docker run -it -e CUDA_VISIBLE_DEVICES=${AVAILABLE_GPU} --gpus=${AVAILABLE_GPU} --name asr  -v /host/location/output:/output gaiaaida/asr:0.2
+      - name: isi-asr
+        image: gaiaaida/asr:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo "Begin ASR for "${parent_child_tab};
+           mkdir -p /output/WORKING/output/;
+           ls -ahl /output/WORKING/mp4/;
+           /bin/bash -c ./entrypoint.sh
+           echo "End ASR for "${parent_child_tab};
 
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 ###############################
 # detect-lang
 ###############################
@@ -584,6 +636,10 @@ spec:
         args:
           # gonna symlink it here to avoid new volumes
           - ln -s /output/WORKING/data/edl_data /data;
+            ls -ahl /output/WORKING/data/;
+            ls -ahl /output/WORKING/data/edl_data;
+            ls -ahl /output/WORKING/data/es/;
+            ls -ahl /output/WORKING/data/es/edl/;
             python ./projs/docker_aida19/aida19.py ${lang} ${edl_output_dir}/${edl_tab_nam_filename} ${edl_output_dir}/${edl_tab_nom_filename} ${edl_output_dir}/${edl_tab_pro_filename} ${edl_output_dir} m36 &
             python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_output_dir_ru}/${edl_tab_nam_filename_ru} ${edl_output_dir_ru}/${edl_tab_nom_filename_ru} ${edl_output_dir_ru}/${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
             python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_output_dir_es}/${edl_tab_nam_filename_es} ${edl_output_dir_es}/${edl_tab_nom_filename_es} ${edl_output_dir_es}/${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
@@ -606,9 +662,9 @@ spec:
 # ENTRYPOINT: "/opt/conda/envs/aida_coreference/bin/python3.6\" \"aida_coref.py\"]
 # command: ["/opt/conda/envs/aida_coreference/bin/python3.6", "/app/aida_coref.py"
 # TODO: not sure how to set --gpus device=1 or how to mount data_root:data_root
-      - name: edl-nominal-conference-en
+      - name: edl-nominal-coreference-en
         image: laituan245/spanbert_entity_coref
-        workingDir: /app
+#        workingDir: /app
 # NOTE: Not sure what the workdingDir should be, but needs to run aida_coref.py
         imagePullPolicy: IfNotPresent
         env:
@@ -618,9 +674,13 @@ spec:
           value: "en.linking.tab"
         - name: edl_tab_link_fb
           value: "en.linking.freebase.tab"
-        command: ["/opt/conda/envs/aida_coreference/bin/python3.6", "/app/aida_coref.py"]
+        command: ["/bin/bash", "-c"]
         args:
-        - -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab
+        - echo "Begin edl-nominal-coreference-en for "${edl_tab_link};
+          ls -ahl ${data_root};
+          /opt/conda/envs/aida_coreference/bin/python3.6 /app/aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab;
+          echo "End edl-nominal-coreference-en";
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -645,7 +705,8 @@ spec:
           value: "/output/WORKING/data/en/edl"
         command: ["/bin/bash", "-c"]
         args:
-          - /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL'
+          - ls -ahl ${edl_output_dir};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL';
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
