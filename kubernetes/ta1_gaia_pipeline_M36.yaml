@@ -24,7 +24,7 @@ spec:
         # - name: output-efs
           # hostPath:
           # path: "C:/some/local/output" 
-        # initContainers:
+      initContainers:
 ################################
 ## setup-edl-rsd  
 ################################
