@@ -12,19 +12,19 @@ spec:
         - name: input-efs
           nfs:
             server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL
-            path: /            
+            path: /
         - name: output-efs
           nfs:
             server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t
             path: /
         #If you want to use a local folder as a volume, you can remove the NFS above and recreate them with a local volume for testing. The names need to match with the volumeMounts of the container
         # - name: input-efs
-          # hostPath: 
+          # hostPath:
           # path: "C:/some/local/input"
         # - name: output-efs
-          # hostPath: 
+          # hostPath:
           # path: "C:/some/local/output" 
-      initContainers:
+        # initContainers:
 ################################
 ## setup-edl-rsd  
 ################################
@@ -179,7 +179,7 @@ spec:
         - name: ltf_file_list_es
           value: "/output/WORKING/data/es/ltf_lst"
         - name: edl_bio_es
-          value: "/output/WORKING/data/es/edl/uk.bio"
+          value: "/output/WORKING/data/es/edl/es.bio"
         - name: rsd_source_es
           value: "/output/WORKING/data/es/rsd"
         - name: rsd_file_list_es
@@ -314,7 +314,7 @@ spec:
         - name: edl_bio_ru
           value: "/output/WORKING/data/ru/edl/ru.bio"
         - name: udp_dir_ru
-          value: "/output/WORKING/data/ru/udp" 
+          value: "/output/WORKING/data/ru/udp"
         - name: rsd_source_ru
           value: "/output/WORKING/data/ru/rsd"
         - name: chunk_file_ru
@@ -325,9 +325,9 @@ spec:
         - name: core_nlp_output_path_es
           value: "/output/WORKING/data/es/corenlp"
         - name: edl_bio_es
-          value: "/output/WORKING/data/es/edl/uk.bio"
+          value: "/output/WORKING/data/es/edl/es.bio"
         - name: udp_dir_es
-          value: "/output/WORKING/data/es/udp" 
+          value: "/output/WORKING/data/es/udp"
         - name: rsd_source_es
           value: "/output/WORKING/data/es/rsd"
         - name: chunk_file_es
@@ -638,9 +638,9 @@ spec:
 
 
 ################################
-## RU/UK edl-nominal-conference-tabcs
+## RU/ES edl-nominal-conference-tabcs
 ################################
-      - name: edl-nominal-conference-ru-uk
+      - name: edl-nominal-conference-ru-es
         image: dylandilu/chuck_coreference
         workingDir: /scr
         imagePullPolicy: IfNotPresent
@@ -745,7 +745,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: relation_cs_coarse_es
-          value: "/output/WORKING/data/es/relation/uk.rel.cs"
+          value: "/output/WORKING/data/es/relation/es.rel.cs"
         command: ["/bin/bash", "-c"]
         args:
           - /opt/conda/envs/aida_relation_coarse/bin/python -u /relation/CoarseRelationExtraction/exec_relation_extraction.py -i ${lang} -l ${ltf_file_list} -f ${ltf_source} -e ${edl_output_dir}/merged.cs -t ${edl_output_dir}/merged_final.tab -o ${relation_cs_coarse} &
@@ -1122,39 +1122,24 @@ spec:
           value: "es.pro.tagged.tab"
         command: ["/bin/bash", "-c"]
         args:
-          - /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py 
+          - /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
             --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${event_result_dir}/en.event.cs 
-            ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/events_tme.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json 
+            ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/events_tme.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json
             ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
-
-# TODO: between # Relation Extraction (fine) and  ## Postprocessing, adding informative justification the following needs to be inserted:
-
-#relation_4tuple=${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs
-#docker run -i -t --rm -v ${data_root}:${data_root} \
-#    -v ${parent_child_tab_path}:${parent_child_tab_path} \
-#    -w /EventTimeArg --gpus device=1 wenhycs/uiuc_event_time \
-#    python aida_event_time_pipeline.py \
-#    --relation_cold_start_filename ${relation_cs_fine} --relation \
-#    --parent_children_filename ${parent_child_tab_path} \
-#    --output_filename ${relation_4tuple}
 
             echo `date` - "add protester";
             /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/en.event.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs;
             echo `date` - "** Informative Justification **";
             /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir}/chunk.txt ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs;
 
-# TODO: the above line entity_informative.py needs to be replaced with:
-# docker run --rm -v ${data_root}:${data_root} -i panx27/aida20_mention \
-#  python ./extend.py ${lang} ${ltf_source} ${edl_cs_fine_protester} ${edl_cs_info}
-
             echo `date` - "Completed entity_informative.py";
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom} 
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom}
             ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs 
             ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py";
 
-            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py 
+            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
             --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${event_result_dir_ru}/en.event.cs 
             ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json 
             ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained;
@@ -1168,8 +1153,22 @@ spec:
             ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs 
             ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py RU";
-            
-#            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py 
+
+# TODO: between # Relation Extraction (fine) and  ## Postprocessing, adding informative justification the following needs to be inserted:
+#relation_4tuple=${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs
+#docker run -i -t --rm -v ${data_root}:${data_root} \
+#    -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#    -w /EventTimeArg --gpus device=1 wenhycs/uiuc_event_time \
+#    python aida_event_time_pipeline.py \
+#    --relation_cold_start_filename ${relation_cs_fine} --relation \
+#    --parent_children_filename ${parent_child_tab_path} \
+#    --output_filename ${relation_4tuple}
+
+# TODO: the above line entity_informative.py needs to be replaced with:
+# docker run --rm -v ${data_root}:${data_root} -i panx27/aida20_mention \
+#  python ./extend.py ${lang} ${ltf_source} ${edl_cs_fine_protester} ${edl_cs_info}
+
+#            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
 #            --lang_id ${lang_uk} --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} --cs_fnames ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/filler_${lang_uk}_all.cs ${relation_result_dir_uk}/${lang_uk}.rel.cs 
 #            ${relation_result_dir_uk}/new_relation_${lang_uk}.cs ${event_result_dir_uk}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab --fine_ent_type_json 
 #            ${edl_output_dir_uk}/${lang_uk}.linking.freebase.fine.json --outdir ${relation_result_dir_uk} --fine_grained;
@@ -1361,59 +1360,25 @@ spec:
           value: "/output/WORKING/data/ru/rsd"
         - name: event_result_dir_ru
           value: "/output/WORKING/data/ru/event"
-        #UKRANIAN
-#        - name: lang_uk
-#          value: "uk"
-#        - name: ltf_source_uk
-#          value: "/output/WORKING/data/uk/ltf"
-#        - name: rsd_source_uk
-#          value: "/output/WORKING/data/uk/rsd"
-#        - name: event_result_dir_uk
-#          value: "/output/WORKING/data/uk/event"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
         command: ["/opt/conda/envs/aida_coreference/bin/python3.6", "aida_event_coref.py"]
         args:
           - -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer} -t ${event_result_dir}/${event_corefer_confidence} -l ${ltf_source}
 
-# TODO: add RU and ES
-
-###OLD>>
-            ## NOTE: /event/aida_event_coreference/gail_event_coreference_test_${lang}.py -> r = requests.post('http://127.0.0.1:6001/aida_event_coreference_eng', json=json_string) -> r = requests.post('http://event-coreference-en:6001/aida_event_coreference_eng', json=json_string)
-            # TODO: not sure how this sed command works and in the latest M36 pipeline the gail_event_coreference_test.py takes an argument -l ${lang}.
-#          - sed -i 's/127.0.0.1/event-coreference-en/' /event/aida_event_coreference/gail_event_coreference_test.py;
-#            echo `date` - "** Event coreference EN **";
-#            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir}/events_fine_all_clean.cs -o ${event_result_dir}/events_corefer.cs -c ${event_result_dir}/events_corefer_confidence.tab -r ${rsd_source} -l ${lang};
-#            echo `date` - "Completed Event coreference";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source} ${event_result_dir}/events_4tuple.cs ${event_result_dir}/events_info.cs --eval m36;
-#            echo `date` - "Completed Update event informative mention";
-#            sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test_${lang_ru}.py;
-#            echo `date` - "** Event coreference RU **";
-#            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test_${lang_ru}.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_results_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru};
-#            echo `date` - "Completed Event coreference RU";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_ru} ${event_result_dir_ru}/events_4tuple.cs ${event_result_dir_ru}/events_info.cs --eval m36;
-#            echo `date` - "Completed Update event informative mention RU";
-
-#Phi 20200916 moved comments out of statement
-
-#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir}/events_corefer.cs ${event_result_dir}/events_4tuple.cs;
-#            echo `date` - "Completed update 'time' format";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir_ru}/events_corefer.cs ${event_result_dir_ru}/events_4tuple.cs;
-#            echo `date` - "Completed update 'time' format RU";
-#            sed -i 's/127.0.0.1/event-coreference-uk/' /event/aida_event_coreference/gail_event_coreference_test_${lang_uk}.py;
-#            echo `date` - "** Event coreference UK **";
-#            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test_${lang_uk}.py -i ${event_result_dir_uk}/events_fine_all_clean.cs -o ${event_result_dir_uk}/events_corefer.cs -c ${event_result_dir_uk}/events_corefer_confidence.tab -r ${rsd_source_uk};
-#            echo `date` - "Completed Event coreference UK";
-### REMOVED #            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_time.py ${event_result_dir_uk}/events_corefer.cs ${event_result_dir_uk}/events_4tuple.cs;
-### REMOVED #            echo `date` - "Completed update 'time' format UK";
-#            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_uk} ${event_result_dir_uk}/events_4tuple.cs ${event_result_dir_uk}/events_info.cs --eval m36;
-#            echo `date` - "Completed Update event informative mention UK";
-
-          
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST) 
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
 ## Final Merge -> Format converter
@@ -1508,11 +1473,10 @@ spec:
 #    --time_cold_start_filename ${filler_coarse} \	    --time_cold_start_filename ${filler_coarse} \
 #    --event_cold_start_filename ${event_corefer} \	    --event_cold_start_filename ${event_corefer} \
 #
-
-          - echo `date` - "** Merging all items **";
-            /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
 # change pipeline merge to use these params:
 #    --cs_fnames ${edl_cs_info_conf} ${edl_cs_color} ${relation_4tuple} ${event_final} \ 
+          - echo `date` - "** Merging all items **";
+            /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
            --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36;
             echo `date` - "multiple freebase links";
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_freebase.py
