@@ -46,6 +46,18 @@ spec:
             mountPath: /output #Please put your output here
 
 ###############################
+# OCR
+###############################
+## ISI: DPN; Xujun Peng
+## see: https://github.com/isi-vista/aida-integration/#ocr
+
+###############################
+# ASR
+###############################
+## ISI: DPN: Xujun Peng
+## see https://github.com/isi-vista/aida-integration/#asr
+
+###############################
 # detect-lang
 ###############################
       - name: detect-lang
@@ -1741,6 +1753,68 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
       restartPolicy: Never
+
+
+################################
+## Columbia University Object Detection
+################################
+## CU: Alireza Zareian
+## See https://github.com/isi-vista/aida-integration/#columbia-university-object-detection
+
+################################
+## USC Object Detection
+################################
+## USC: Haidong Zhu
+## See https://github.com/isi-vista/aida-integration/#usc-object-detection
+
+################################
+## Columbia University Face, Flag, Landmark Detection
+################################
+## CU: Brian Chen
+## See https://github.com/isi-vista/aida-integration/#columbia-university-face-flag-landmark-detection
+
+################################
+## Columbia University Visual Grounding
+################################
+## CU: Xudong Lin
+## See https://github.com/isi-vista/aida-integration/#columbia-university-visual-grounding
+
+################################
+## USC Grounding
+################################
+## USC: Haidong Zhu
+## See: https://github.com/isi-vista/aida-integration/#usc-grounding
+
+################################
+## USC Scene Prediction
+################################
+## USC: Haidong Zhu
+## See notes
+## Is this to be included?
+
+################################
+## Columbia University Graph Merging
+################################
+## CU: Xudong Lin
+## See https://github.com/isi-vista/aida-integration/#columbia-university-graph-merging
+
+################################
+## Columbia University Sentiment
+################################
+## CU: Amith Ananthram
+## See https://github.com/isi-vista/aida-integration/#cu-sentiment
+
+################################
+## Augment AIF
+################################
+## ISI: Elizabeth Lee
+## See notes
+
+################################
+## Remove ASR
+################################
+## ISI: DPN
+## See notes
 
 ################################
 ## containers:
