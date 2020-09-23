@@ -24,7 +24,116 @@ spec:
         # - name: output-efs
           # hostPath:
           # path: "C:/some/local/output"
+
       initContainers:
+
+###############################
+# ISI AIDA-TOOLS
+###############################
+## ISI: DPN
+## see https://hub.docker.com/repository/docker/gaiaaida/aida-tools
+## python ./extract_mp4.py ./extract_mp4.docker_default.param
+      - name: isi-aida-tools
+        image: gaiaaida/aida-tools:0.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START AIDA Tools **";
+           ls -ahl /input/data/;
+           ls -ahl /input/data/mp4/;
+           ls -ahl /input/data/mp4/mp4/;
+           mkdir -p /output/WORKING/mp4/;
+           python ./extract_mp4.py ./extract_mp4.docker_default.param;
+           ls -ahl /output/WORKING/mp4/;
+           echo `date` - "END AIDA Tools";
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+###############################
+# ISI OCR
+###############################
+## ISI: DPN; Xujun Peng
+## see: https://github.com/isi-vista/aida-integration/#ocr
+
+###############################
+# ISI ASR
+###############################
+## ISI: DPN: Xujun Peng
+## see https://github.com/isi-vista/aida-integration/#asr
+## $ docker run -it -e CUDA_VISIBLE_DEVICES=${AVAILABLE_GPU} --gpus=${AVAILABLE_GPU} --name asr  -v /host/location/output:/output gaiaaida/asr:0.2
+      - name: isi-asr
+        image: gaiaaida/asr:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START ASR **";
+           ls -ahl /output/WORKING/mp4/;
+           mkdir -p /output/WORKING/output/;
+           /bin/bash -c ./entrypoint.sh;
+           ls -ahl /output/WORKING/output/;
+           echo `date` - "END ASR"};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Columbia University Object Detection
+################################
+## CU: Alireza Zareian
+## https://hub.docker.com/repository/docker/gaiaaida/object-detection
+## See https://github.com/isi-vista/aida-integration/#columbia-university-object-detection
+      - name: cu-object-detection
+        image: gaiaaida/object-detection:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: OBJDET_OUTPUT
+          value: "/output/WORKING/cu-object-detection/"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START CU Object Detection **";
+           echo "INPUT "${INPUT};
+           echo "OUTPUT "${OUTPUT};
+           echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
+           ls -ahl /input/docs/;
+           ls -ahl /input/data/jpg/;
+           ls -ahl /input/data/jpg/jpg/;
+           ls -ahl /input/data/video_shot_boundaries/representative_frames/;
+           mkdir -p ${OBJDET_OUTPUT};
+           /bin/bash -c ./full_script.sh/;
+           ls -ahl /output/;
+           ls -ahl ${OBJDET_OUTPUT};
+           echo `date` - "END CU Object Detection";
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
 ################################
 ## setup-edl-rsd
 ################################
@@ -45,70 +154,6 @@ spec:
           - name: output-efs
             mountPath: /output #Please put your output here
 
-###############################
-# ISI AIDA-TOOLS
-###############################
-## ISI: DPN
-## see https://hub.docker.com/repository/docker/gaiaaida/aida-tools
-## python ./extract_mp4.py ./extract_mp4.docker_default.param
-      - name: isi-aida-tools
-        image: gaiaaida/aida-tools:0.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: parent_child_tab
-          value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
-        command: ["/bin/bash", "-c"]
-        args:
-         - echo "Begin aida-tools for "${parent_child_tab};
-           ls -ahl /input/data/mp4/mp4/;
-           mkdir -p /output/WORKING/mp4/;
-           python ./extract_mp4.py ./extract_mp4.docker_default.param
-           ls -ahl /output/WORKING/mp4/;
-           echo "End aida-tools for "${parent_child_tab};
-
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-###############################
-# OCR
-###############################
-## ISI: DPN; Xujun Peng
-## see: https://github.com/isi-vista/aida-integration/#ocr
-
-###############################
-# ASR
-###############################
-## ISI: DPN: Xujun Peng
-## see https://github.com/isi-vista/aida-integration/#asr
-## $ docker run -it -e CUDA_VISIBLE_DEVICES=${AVAILABLE_GPU} --gpus=${AVAILABLE_GPU} --name asr  -v /host/location/output:/output gaiaaida/asr:0.2
-      - name: isi-asr
-        image: gaiaaida/asr:0.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: parent_child_tab
-          value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
-        command: ["/bin/bash", "-c"]
-        args:
-         - echo "Begin ASR for "${parent_child_tab};
-           mkdir -p /output/WORKING/output/;
-           ls -ahl /output/WORKING/mp4/;
-           /bin/bash -c ./entrypoint.sh
-           echo "End ASR for "${parent_child_tab};
-
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 ###############################
 # detect-lang
 ###############################
@@ -281,12 +326,14 @@ spec:
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_es} ${rsd_file_list_es};
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_es} ${ltf_file_list_es};
             /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_es}
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
 ################################
 ## timetable-tab
 ################################
@@ -309,6 +356,7 @@ spec:
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
 ################################
 ## apply-stanford-corenlp
 ################################
@@ -356,6 +404,7 @@ spec:
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
 ################################
 ## universal-dependency-parser-chunk
 ################################
@@ -426,6 +475,7 @@ spec:
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
 ################################
 ## process-framenet-generate
 ################################
@@ -465,16 +515,20 @@ spec:
           - mkdir -p /output/WORKING/data/en/event;
             mkdir -p /output/WORKING/data/ru/event;
             mkdir -p /output/WORKING/data/es/event;
+            echo `date` - "START Process Framenet Generate";
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang} ${ltf_source} ${ltf_txt_path} ${framenet_path} &
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_ru} ${ltf_source_ru} ${ltf_txt_path_ru} ${framenet_path_ru} &
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_es} ${ltf_source_es} ${ltf_txt_path_es} ${framenet_path_es} &
-            wait
+            wait;
+            echo `date` - "END Process Framenet Generate";
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
 ################################
 ## run-semafor
 ################################
@@ -502,10 +556,13 @@ spec:
           value: "3"
         command: ["/bin/bash", "-c"]
         args:
-          - /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
+          - echo `date` - "START Run Semafor";
+            /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_ru} ${framenet_path_ru} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_es} ${framenet_path_es} ${thread_num} &
-            wait
+            wait;
+            echo `date` - "END Run Semafor";
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1814,13 +1871,6 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
       restartPolicy: Never
-
-
-################################
-## Columbia University Object Detection
-################################
-## CU: Alireza Zareian
-## See https://github.com/isi-vista/aida-integration/#columbia-university-object-detection
 
 ################################
 ## USC Object Detection
