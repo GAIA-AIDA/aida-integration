@@ -34,22 +34,26 @@ spec:
 ## see https://hub.docker.com/repository/docker/gaiaaida/aida-tools
 ## python ./extract_mp4.py ./extract_mp4.docker_default.param
       - name: isi-aida-tools
-        image: gaiaaida/aida-tools:0.1
+        image: gaiaaida/aida-tools:0.2
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
           value: "/input/docs/parent_children.tab"
         - name: CUDA_VISIBLE_DEVICES
           value: "0"
+        - name: INPUT_MP4_LDCC
+          value: "/input/data/mp4"
+        - name: OUTPUT_MP4
+          value: "/output/WORKING/mp4"
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START AIDA Tools **";
-           ls -ahl /input/data/;
-           ls -ahl /input/data/mp4/;
-           ls -ahl /input/data/mp4/mp4/;
-           mkdir -p /output/WORKING/mp4/;
-           python ./extract_mp4.py ./extract_mp4.docker_default.param;
-           ls -ahl /output/WORKING/mp4/;
+           ls -ahl ${INPUT_MP4_LDCC};
+           mkdir -p ${OUTPUT_MP4};
+           echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" > ./M36.param;
+           cat ./M36.param;
+           python ./extract_mp4.py ./M36.param;
+           ls -ahl ${OUTPUT_MP4};
            echo `date` - "END AIDA Tools";
 
         volumeMounts:
@@ -1915,6 +1919,10 @@ spec:
             echo `date` - "END ES append-private-information";
             echo "Final ES result in Cold Start Format is in ${data_root_es}/${lang_es}${source_es}_full_link.cs";
             echo "Final ES result in RDF Format is in ${data_root_es}/final";
+            find ${data_root_es} -name 'merged.cs';
+            find ${data_root_es} -name 'merged_final.tab';
+            find ${data_root_es} -name 'events_tme.cs';
+#TODO: copy files for sentiment to /output/WORKING/uiuc_ttl_results/
 #TODO: copy files needed by CU, text mention results in /output/WORKING/uiuc_ttl_results
         volumeMounts:
           - name: input-efs
@@ -1927,9 +1935,11 @@ spec:
 ## Columbia University Face, Flag, Landmark Detection
 ################################
 ## CU: Brian Chen
+## https://hub.docker.com/repository/docker/gaiaaida/face-building
 ## See https://github.com/isi-vista/aida-integration/#columbia-university-face-flag-landmark-detection
+
       - name: cu-face-building
-        image: gaiaaida/face-building:0.2
+        image: gaiaaida/face-building:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
