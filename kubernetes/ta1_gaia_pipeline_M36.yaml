@@ -116,21 +116,26 @@ spec:
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/cu_objdet_results/"
         - name: CORPUS
-          value: "/input/"
+          value: "/output/WORKING/corpus/"
         - name: INPUT
           value: "/input/"
         - name: OUTPUT
           value: "/output/WORKING/"
         command: ["/bin/bash", "-c"]
         args:
+# code is looking for jpg in ${CORPUS}/data/jpg/jpg
+# but jpgs are in ${INPUT}/data/jpg (no second jpg directory)
          - echo `date` - "** START CU Object Detection **";
            echo "INPUT "${INPUT};
            echo "CORPUS "${CORPUS};
            echo "OUTPUT "${OUTPUT};
            echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
+           mkdir -p ${CORPUS}"data/jpg/jpg";
+           cp -r ${INPUT}"data/jpg" ${CORPUS}"data/jpg/jpg";
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
+           ls -ahl ${CORPUS}"data/jpg/jpg";
            mkdir -p ${OBJDET_OUTPUT};
            /bin/bash -c ./full_script.sh;
            ls -ahl /output/;
