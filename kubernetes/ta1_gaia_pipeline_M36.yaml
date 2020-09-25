@@ -111,19 +111,26 @@ spec:
           value: "0"
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/cu_objdet_results/"
+        - name: CORPUS
+          value: "/input/"
+        - name: INPUT
+          value: "/input/"
+        - name: OUTPUT
+          value: "/output/WORKING/"
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START CU Object Detection **";
            echo "INPUT "${INPUT};
+           echo "CORPUS "${CORPUS};
            echo "OUTPUT "${OUTPUT};
            echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
-           ls -ahl /input/data/jpg/jpg/;
            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
            mkdir -p ${OBJDET_OUTPUT};
-           /bin/bash -c ./full_script.sh/;
+           /bin/bash -c ./full_script.sh;
            ls -ahl /output/;
+           echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
            ls -ahl ${OBJDET_OUTPUT};
            echo `date` - "END CU Object Detection";
 
@@ -153,9 +160,7 @@ spec:
           value: "/output/WORKING/usc-object-detection/"
         command: ["/bin/bash", "-c"]
         args:
-# entity2mention_dict_E1.pickle
-# id2mentions_dict_E1.pickle
-# parent_children.sorted.tab
+# this should only do the USC object detection, not the grounding.
          - echo `date` - "** START USC Object Detection **";
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
@@ -169,21 +174,11 @@ spec:
            cd /aida/src/;
            python ./code/smoke_test.py;
            python ./code/aida_ds_creator.py;
-           cd ./open_images_pfdet/;
-           python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1"
-             --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted
-             --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True
-             --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True;
-           cd ../;
-           python ./code/mrcnn_2_aida.py;
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=False;
-           python ./code/ground_naive.py;
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=True;
-           find . -name 'uscvision_grounding_output_cu_format_E1.pickle;
-           RESULTS=./uscvision_grounding_output_cu_format_E1.pickle;
+           ls -ahl ./;
+           RESULTS=./*.*;
            cp ${RESULTS} ${OBJDET_OUTPUT};
            echo `date` - "END USC Object Detection";
-
+# TODO: confirm exact files copied out.
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1992,14 +1987,17 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: CUDA_VISIBLE_DEVICES
           value: "0"
-        - name: OBJDET_OUTPUT
-          value: "/output/WORKING/usc-object-detection/"
+        - name: VISGRD_OUTPUT
+          value: "/output/WORKING/cu-visual-grounding/"
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "START CU Visual Grounding";
+            mkdir -p ${VISGRD_OUTPUT};
             python ./smoke_test.py;
             python ./Feature_Extraction.py;
             python ./Visual_Grounding_mp.py;
+            ls -ahl ${VISGRD_OUTPUT};
+            find . -name '*.pickle';
             echo `date` - "END CU Visual Grounding";
 
         volumeMounts:
@@ -2012,12 +2010,12 @@ spec:
 
 
 ################################
-## USC Object Detection And Grounding
+## USC Grounding
 ################################
 ## USC: Haidong Zhu
 ## https://hub.docker.com/repository/docker/gaiaaida/detection-grounding
-## See https://github.com/isi-vista/aida-integration/#usc-object-detection
-      - name: usc-object-detection
+## See https://github.com/isi-vista/aida-integration#usc-grounding
+      - name: usc-grounding
         image: gaiaaida/detection-grounding:0.2
         imagePullPolicy: IfNotPresent
         env:
@@ -2025,21 +2023,22 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: CUDA_VISIBLE_DEVICES
           value: "0"
-        - name: DETGRD_OUTPUT
-          value: "/output/WORKING/usc-object-detection/"
+        - name: GRD_OUTPUT
+          value: "/output/WORKING/usc-grounding/"
         command: ["/bin/bash", "-c"]
         args:
 # REQUIRES:
 # entity2mention_dict_E1.pickle
 # id2mentions_dict_E1.pickle
 # parent_children.sorted.tab
+# TODO: USC object detection already ran, so what parts can we skip here:
          - echo `date` - "** START USC Object Detection and Grounding **";
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
-           echo "DETGRD_OUTPUT "${OBJDET_OUTPUT};
+           echo "GRD_OUTPUT "${GRD_OUTPUT};
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
-           mkdir -p ${DETGRD_OUTPUT};
+           mkdir -p ${GRD_OUTPUT};
            find . -name '*.pickle';
            cd /aida/src/;
            python ./code/smoke_test.py;
@@ -2056,7 +2055,7 @@ spec:
            python ./code/columbia_idmentions_2_phrase_file.py --fin1=True;
            find . -name 'uscvision_grounding_output_cu_format_E1.pickle;
            RESULTS=./uscvision_grounding_output_cu_format_E1.pickle;
-           cp ${RESULTS} ${OBJDET_OUTPUT};
+           cp ${RESULTS} ${GRD_OUTPUT};
            echo `date` - "END USC Object Detection and Grounding";
 
 # RESULTS:  uscvision_grounding_output_cu_format_E1.pickle
@@ -2099,7 +2098,7 @@ spec:
 # $ GPU_ID=[a single integer index to the GPU]
 # $ docker run -itd -e CUDA_VISIBLE_DEVICES=${GPU_ID} --gpus ${GPU_ID} --name aida-gm -v columbia_visual_grounding_models/:/root/models -v ${INPUT}:/root/LDC:ro -v ${OUTPUT}/WORKING/columbia_vision_shared/:/root/shared aida-grounding-merging /bin/bash
 
-      - name: cu-visual-grounding
+      - name: cu-graph-merging
         image: gaiaaida/grounding-merging:0.2
         imagePullPolicy: IfNotPresent
         env:
@@ -2122,6 +2121,7 @@ spec:
             ls -ahl ${RESULTS};
             cp -r ${RESULTS} ${MERGE_OUTPUT};
             ls -ahl ${MERGE_OUTPUT};
+            find . -name 'cu_graph_merging_ttl';
             echo `date` - "END CU Graph Merging";
 # CU graph merging result path
 #merged_graph_path = working_path + 'cu_graph_merging_ttl/' + version_folder + 'merged_ttl_'+ p_f_run + '/'
