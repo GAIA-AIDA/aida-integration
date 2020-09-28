@@ -1575,7 +1575,7 @@ spec:
            python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename {event_cold_start_filename_ru} --parent_children_filename {parent_child_tab_path_ru} --output_filename {output_filename_ru} --lang {lang_ru} &
            python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename {event_cold_start_filename_es} --parent_children_filename {parent_child_tab_path_es} --output_filename {output_filename_es} --lang {lang_es} &
            wait;
-           echo `date` - "END AIDA Tools";
+           echo `date` - "END Temporal 4 tuple generation";
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1583,6 +1583,53 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+################################
+## Event Informative Justitfication
+################################
+      - name: event-info-justification
+        image: limanling/uiuc_ie_m36
+        imagePullPolicy: IfNotPresent
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: ltf_source
+          value: "/output/WORKING/data/en/ltf"
+        - name: event_corefer_time
+          value: "/output/WORKING/data/en/event/events_4tuple.cs"
+        - name: event_final
+          value: "/output/WORKING/data/en/event/events_info.cs"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: ltf_source_ru
+          value: "/output/WORKING/data/ru/ltf"
+        - name: event_corefer_time_ru
+          value: "/output/WORKING/data/ru/event/events_4tuple.cs"
+        - name: event_final_ru
+          value: "/output/WORKING/data/ru/event/events_info.cs"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: event_corefer_time_es
+          value: "/output/WORKING/data/es/event/events_4tuple.cs"
+        - name: event_final_es
+          value: "/output/WORKING/data/es/event/events_info.cs"
+        args:
+         - echo `date` - "** START Event Informative Justitfication **";
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source} ${event_corefer_time} ${event_final} --eval m36 &
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source_ru} ${event_corefer_time_ru} ${event_final_ru} --eval m36 &
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source_es} ${event_corefer_time_es} ${event_final_es} --eval m36 &
+           wait;
+           echo `date` - "END Event Informative Justitfication";
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
 ## Final Merge -> Format converter
