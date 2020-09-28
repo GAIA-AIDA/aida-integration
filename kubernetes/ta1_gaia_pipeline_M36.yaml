@@ -226,9 +226,7 @@ spec:
 
         command: ["/bin/bash", "-c"]
         args:
-          - /opt/conda/envs/py36/bin/python /preprocessing/preprocess_detect_languages.py /output/WORKING/system/rsd /input/data/ltf /output/WORKING/data --langs 'en' --parent_child_tab_path /input/docs/parent_children.tab &
-            /opt/conda/envs/py36/bin/python /preprocessing/preprocess_detect_languages.py /output/WORKING/system/rsd /input/data/ltf /output/WORKING/data --langs 'ru' --parent_child_tab_path /input/docs/parent_children.tab &
-            /opt/conda/envs/py36/bin/python /preprocessing/preprocess_detect_languages.py /output/WORKING/system/rsd /input/data/ltf /output/WORKING/data --langs 'es' --parent_child_tab_path /input/docs/parent_children.tab &
+          - /opt/conda/envs/py36/bin/python /preprocessing/preprocess_detect_languages.py /output/WORKING/system/rsd /input/data/ltf /output/WORKING/data --langs en ru es --parent_child_tab_path /input/docs/parent_children.tab &
             wait
 
         volumeMounts:
@@ -269,7 +267,7 @@ spec:
             # mountPath: "/input"
             # readOnly: true #Input Volume for worker will be set to readOnly
           # - name: output-efs
-            # mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)      
+            # mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
       # - name: english-ocr
         # image: limanling/uiuc_ie_m18
         # imagePullPolicy: IfNotPresent
@@ -632,6 +630,54 @@ spec:
             mountPath: "/output"
 
 ################################
+## OneIE
+################################
+# docker run --rm -i -v ${data_root}:${data_root} -w /oneie --gpus '"device=1"' limteng/oneie_aida_m36 \
+#     /opt/conda/bin/python \
+#     /oneie/predict.py -i ${ltf_source} -o ${data_root} -l ${lang} --output_hidden
+## this is from docker limteng/oneie_aida_m36
+
+      - name: oneie
+        image: limteng/oneie_aida_m36
+        imagePullPolicy: IfNotPresent
+# TODO DAN how do we run this on docker using '--gpus device=1'
+        workingDir: /oneie
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: ltf_source
+          value: "/output/WORKING/data/en/ltf"
+        - name: data_root
+          value: "/output/WORKING/data/en"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: ltf_source_ru
+          value: "/output/WORKING/data/ru/ltf"
+        - name: data_root_ru
+          value: "/output/WORKING/data/ru"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: data_root_es
+          value: "/output/WORKING/data/es"
+        command: ["/bin/bash", "-c"]
+        args:
+          - /opt/conda/bin/python /oneie/predict.py -i ${ltf_source} -o ${data_root} -l {lang} --output_hidden
+            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_ru} -o ${data_root_ru} -l {lang_ru} --output_hidden
+            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_es} -o ${data_root_es} -l {lang_es} --output_hidden
+            wait
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true # Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
 ## EDL edl-entity-extraction
 ################################
       - name: edl-entity-extraction
@@ -646,16 +692,10 @@ spec:
           value: "/output/WORKING/data/en/ltf"
         - name: rsd_source
           value: "/output/WORKING/data/en/rsd"
-        - name: edl_tab_nam
-          value: "en.nam.tagged.tab"
-        - name: edl_tab_nom
-          value: "en.nom.tagged.tab"
-        - name: edl_tab_pro
-          value: "en.pro.tagged.tab"
+        - name: edl_tab_nam_bio
+          value: "/output/WORKING/data/en/merge/mention/english.nam.bio"
         - name: entity_fine_model
-          value: "merged_fine.tsv"
-        - name: edl_output_dir
-          value: "/output/WORKING/data/en/edl"
+          value: "/output/WORKING/data/en/edl/merged_fine.tsv"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
@@ -663,16 +703,10 @@ spec:
           value: "/output/WORKING/data/ru/ltf"
         - name: rsd_source_ru
           value: "/output/WORKING/data/ru/rsd"
-        - name: edl_tab_nam_ru
-          value: "ru.nam.tagged.tab"
-        - name: edl_tab_nom_ru
-          value: "ru.nom.tagged.tab"
-        - name: edl_tab_pro_ru
-          value: "ru.pro.tagged.tab"
+        - name: edl_tab_nam_bio_ru
+          value: "/output/WORKING/data/ru/mention/russian.nam.bio”"
         - name: entity_fine_model_ru
-          value: "merged_fine.tsv"
-        - name: edl_output_dir_ru
-          value: "/output/WORKING/data/ru/edl"
+          value: "/output/WORKING/data/ru/edl/merged_fine.tsv"
         #SPANISH
         - name: lang_es
           value: "es"
@@ -680,22 +714,16 @@ spec:
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
           value: "/output/WORKING/data/es/rsd"
-        - name: edl_tab_nam_es
-          value: "es.nam.tagged.tab"
-        - name: edl_tab_nom_es
-          value: "es.nom.tagged.tab"
-        - name: edl_tab_pro_es
-          value: "es.pro.tagged.tab"
+        - name: edl_tab_nam_bio_es
+          value: “/output/WORKING/data/es/mention/spanish.nam.bio”
         - name: entity_fine_model_es
-          value: "merged_fine.tsv"
-        - name: edl_output_dir_es
-          value: "/output/WORKING/data/es/edl"
+          value: "/output/WORKING/data/es/edl/merged_fine.tsv"
         command: ["/bin/bash", "-c"]
         args:
           - sed -i 's/0.0.0.0/aida-entity/' /entity/aida_edl/edl.py;
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/edl.py ${ltf_source} ${rsd_source} ${lang} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom} ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${entity_fine_model} ${edl_output_dir} &
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/edl.py ${ltf_source_ru} ${rsd_source_ru} ${lang_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru} ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${entity_fine_model_ru} ${edl_output_dir_ru} &
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/edl.py ${ltf_source_es} ${rsd_source_es} ${lang_es} ${edl_output_dir_es}/${edl_tab_nam_es} ${edl_output_dir_es}/${edl_tab_nom_es} ${edl_output_dir_es}/${edl_tab_pro_es} ${edl_output_dir_es}/${entity_fine_model_es} ${edl_output_dir_es} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang} ${edl_tab_nam_bio} ${entity_fine_model} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_ru} ${edl_tab_nam_bio_ru} ${entity_fine_model_ru} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_es} ${edl_tab_nam_bio_es} ${entity_fine_model_es}
             wait;
             #modify /entity/aida_edl/edl.py - line 13 - url = 'http://0.0.0.0:5500/tagging' -> url = 'http://aida-entity:5500/tagging'
         volumeMounts:
@@ -717,11 +745,11 @@ spec:
         - name: source
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename
-          value: "en.nam.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nam.tagged.tab"
         - name: edl_tab_nom_filename
-          value: "en.nom.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nom.tagged.tab"
         - name: edl_tab_pro_filename
-          value: "en.pro.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.pro.tagged.tab"
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         #RUSSIAN
@@ -730,11 +758,11 @@ spec:
         - name: source_ru
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_ru
-          value: "ru.nam.tagged.tab"
+          value: "/output/WORKING/data/ru/mention/ru.nam.tagged.tab"
         - name: edl_tab_nom_filename_ru
-          value: "ru.nom.tagged.tab"
+          value: "/output/WORKING/data/ru/mention/ru.nom.tagged.tab"
         - name: edl_tab_pro_filename_ru
-          value: "ru.pro.tagged.tab"
+          value: "/output/WORKING/data/ru/mention/ru.pro.tagged.tab"
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         #SPANISH
@@ -743,11 +771,11 @@ spec:
         - name: source_es
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_es
-          value: "es.nam.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nam.tagged.tab"
         - name: edl_tab_nom_filename_es
-          value: "es.nom.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nom.tagged.tab"
         - name: edl_tab_pro_filename_es
-          value: "es.pro.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.pro.tagged.tab"
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         command: ["/bin/bash", "-c"]
@@ -758,9 +786,9 @@ spec:
             ls -ahl /output/WORKING/data/edl_data;
             ls -ahl /output/WORKING/data/es/;
             ls -ahl /output/WORKING/data/es/edl/;
-            python ./projs/docker_aida19/aida19.py ${lang} ${edl_output_dir}/${edl_tab_nam_filename} ${edl_output_dir}/${edl_tab_nom_filename} ${edl_output_dir}/${edl_tab_pro_filename} ${edl_output_dir} m36 &
-            python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_output_dir_ru}/${edl_tab_nam_filename_ru} ${edl_output_dir_ru}/${edl_tab_nom_filename_ru} ${edl_output_dir_ru}/${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
-            python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_output_dir_es}/${edl_tab_nam_filename_es} ${edl_output_dir_es}/${edl_tab_nom_filename_es} ${edl_output_dir_es}/${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
+            python ./projs/docker_aida19/aida19.py ${lang} ${edl_tab_nam_filename} ${edl_tab_nom_filename} ${edl_tab_pro_filename} ${edl_output_dir} m36 &
+            python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_tab_nam_filename_ru} ${edl_tab_nom_filename_ru} ${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
+            python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es} ${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
             wait
           #NOTE: why is there a testdata_? Was this just part of a testing script?
         volumeMounts:
@@ -805,9 +833,6 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-        resources:
-          limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
 # TODO DAN how do we run this on docker using '--gpus device=1', does the line above accomplish this?
 
 
@@ -901,60 +926,41 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
-## Relation Extraction (coarse-grained)
+## Rewrite Relation and Event of OneIE system
 ################################
+# new for oneie, and the command is:
+# docker run --rm -v ${data_root}:${data_root} -v ${data_root}:${data_root} -w `pwd`  -i limanling/uiuc_ie_m36 \
+#     /opt/conda/envs/py36/bin/python \
+#     /aida_utilities/rewrite_entity_id.py \
+#     ${edl_cs_oneie} ${relation_cs_oneie} ${event_coarse_oneie} ${edl_cs_coarse} \
+#     ${relation_cs_coarse} ${event_coarse_without_time}
+# # for all three languages
 
-      - name: extract-relations
+      - name: rewrite-relation-event-oneie
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
-        - name: lang
-          value: "en"
-        - name: ltf_file_list
-          value: "/output/WORKING/data/en/ltf_lst"
-        - name: ltf_source
-          value: "/output/WORKING/data/en/ltf"
-        - name: edl_output_dir
-          value: "/output/WORKING/data/en/edl"
-        - name: relation_cs_coarse
-          value: "/output/WORKING/data/en/relation/en.rel.cs"
+        - name: data_root
+          value: "/output/WORKING/data/en"
         #RUSSIAN
-        - name: lang_ru
-          value: "ru"
-        - name: ltf_file_list_ru
-          value: "/output/WORKING/data/ru/ltf_lst"
-        - name: ltf_source_ru
-          value: "/output/WORKING/data/ru/ltf"
-        - name: edl_output_dir_ru
-          value: "/output/WORKING/data/ru/edl"
-        - name: relation_cs_coarse_ru
-          value: "/output/WORKING/data/ru/relation/ru.rel.cs"
+        - name: data_root_ru
+          value: "/output/WORKING/data/ru"
         #SPANISH
-        - name: lang_es
-          value: "es"
-        - name: ltf_file_list_es
-          value: "/output/WORKING/data/es/ltf_lst"
-        - name: ltf_source_es
-          value: "/output/WORKING/data/es/ltf"
-        - name: edl_output_dir_es
-          value: "/output/WORKING/data/es/edl"
-        - name: relation_cs_coarse_es
-          value: "/output/WORKING/data/es/relation/es.rel.cs"
+        - name: data_root_es
+          value: "/output/WORKING/data/es"
         command: ["/bin/bash", "-c"]
         args:
-          - /opt/conda/envs/aida_relation_coarse/bin/python -u /relation/CoarseRelationExtraction/exec_relation_extraction.py -i ${lang} -l ${ltf_file_list} -f ${ltf_source} -e ${edl_output_dir}/merged.cs -t ${edl_output_dir}/merged_final.tab -o ${relation_cs_coarse} &
-            /opt/conda/envs/aida_relation_coarse/bin/python -u /relation/CoarseRelationExtraction/exec_relation_extraction.py -i ${lang_ru} -l ${ltf_file_list_ru} -f ${ltf_source_ru} -e ${edl_output_dir_ru}/merged.cs -t ${edl_output_dir_ru}/merged_final.tab -o ${relation_cs_coarse_ru} &
-            /opt/conda/envs/aida_relation_coarse/bin/python -u /relation/CoarseRelationExtraction/exec_relation_extraction.py -i ${lang_es} -l ${ltf_file_list_es} -f ${ltf_source_es} -e ${edl_output_dir_es}/merged.cs -t ${edl_output_dir_es}/merged_final.tab -o ${relation_cs_coarse_es} &
+          - /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root}/merge/cs/entity.cs ${data_root}/merge/cs/relation.cs ${data_root}/merge/cs/event.cs ${data_root}/edl/merged.cs ${data_root}/relation/en.rel.cs ${data_root}/event/event_rewrite.cs &
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/cs/entity.cs ${data_root_es}/cs/relation.cs ${data_root_es}/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/cs/entity.cs ${data_root_ru}/cs/relation.cs ${data_root_ru}/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
             wait;
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
+            readOnly: true # Input Volume for worker will be set to readOnly
           - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-#TODO DAN above needs to run  --gpus device=1  too
+            mountPath: "/output" # Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
 ## Filler Extraction & new relation
@@ -1086,102 +1092,12 @@ spec:
             /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_ru}/${lang_ru}.linking.col.tab
             --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_ru}.cs --en_combo_outfname ${edl_output_dir_ru}/filler_${lang_ru}_all.cs --en_color_outfname ${edl_output_dir_ru}/${lang_ru}.color.cs &
 
-            /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_es}/${lang_es}.linking.col.tab 
+            /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_es}/${lang_es}.linking.col.tab
             --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_es}.cs --en_combo_outfname ${edl_output_dir_es}/filler_${lang_es}_all.cs --en_color_outfname ${edl_output_dir_es}/${lang_es}.color.cs &
 
             wait;
             echo `date` - "Completed color_fillers.py";
 
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-################################
-## EN - extracting events
-################################
-      - name: extracting-events-en-method1
-        image: lifuhuang/aida_event_lf
-        imagePullPolicy: IfNotPresent
-        env:
-        #ENGLISH
-        - name: lang
-          value: "en"
-        - name: edl_output_dir
-          value: "/output/WORKING/data/en/edl"
-        - name: ltf_source
-          value: "/output/WORKING/data/en/ltf"
-        - name: rsd_source
-          value: "/output/WORKING/data/en/rsd"
-        - name: event_result_dir
-          value: "/output/WORKING/data/en/event"
-
-        command: ["/bin/bash", "-c"]
-        args:
-            - sh /aida_run_all_docker.sh ${event_result_dir} ${edl_output_dir}/merged_final.tab ${ltf_source} ${edl_output_dir}/merged.cs;
-              echo `date` - "Completed extracting-events-en-method1";
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-# TODO DAN above also needs  --gpus device=1
-
-################################
-## RU/ES - extracting events
-################################
-
-      - name: extracting-events-ru-es
-        image: limanling/uiuc_ie_m36
-        imagePullPolicy: IfNotPresent
-        env:
-        #RUSSIAN
-        - name: lang_ru
-          value: "ru"
-        - name: edl_output_dir_ru
-          value: "/output/WORKING/data/ru/edl"
-        - name: ltf_source_ru
-          value: "/output/WORKING/data/ru/ltf"
-        - name: rsd_source_ru
-          value: "/output/WORKING/data/ru/rsd"
-        - name: event_result_dir_ru
-          value: "/output/WORKING/data/ru/event"
-        #SPANISH
-        - name: lang_es
-          value: "es"
-        - name: edl_output_dir_es
-          value: "/output/WORKING/data/es/edl"
-        - name: ltf_source_es
-          value: "/output/WORKING/data/es/ltf"
-        - name: rsd_source_es
-          value: "/output/WORKING/data/es/rsd"
-        - name: event_result_dir_es
-          value: "/output/WORKING/data/es/event"
-        command: ["/bin/bash", "-c"]
-        args:
-          - /opt/conda/envs/ru_event/bin/python /ru_event/${lang_ru}_event/${lang_ru}_event_backend.py
-            --ltf_folder_path ${ltf_source_ru}
-            --input_edl_bio_file_path ${edl_output_dir_ru}/${lang_ru}.nam.tagged.bio
-            --input_rsd_folder_path ${rsd_source_ru}
-            --entity_cs_file_path ${edl_output_dir_ru}/merged.cs
-            --output_dir ${event_result_dir_ru}
-            --output_event_cs ${event_result_dir_ru}/${lang_ru}.events.cs &
-
-            /opt/conda/envs/ru_event/bin/python /ru_event/${lang_es}_event/${lang_es}_event_backend.py
-            --ltf_folder_path ${ltf_source_es}
-            --input_edl_bio_file_path ${edl_output_dir_es}/${lang_es}.nam.tagged.bio
-            --input_rsd_folder_path ${rsd_source_es}
-            --entity_cs_file_path ${edl_output_dir_es}/merged.cs
-            --output_dir ${event_result_dir_es}
-            --output_event_cs ${event_result_dir_es}/${lang_es}.events.cs &
-
-            wait;
-
-            echo `date` - "Completed extracting-events-ru-es";
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1318,7 +1234,7 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-            --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${event_result_dir}/en.event.cs 
+            --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${event_result_dir}/en.event.cs
             ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/events_tme.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json
             ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
@@ -1330,13 +1246,13 @@ spec:
 
             echo `date` - "Completed entity_informative.py";
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom}
-            ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs 
+            ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs
             ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py";
 
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-            --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${event_result_dir_ru}/en.event.cs 
-            ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json 
+            --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${event_result_dir_ru}/en.event.cs
+            ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json
             ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained;
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs;
             echo `date` - "add protester RU";
@@ -1344,8 +1260,8 @@ spec:
             echo `date` - "** Informative Justification ** RU";
             /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
             echo `date` - "Completed entity_informative.py RU";
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru} 
-            ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs 
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru}
+            ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs
             ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py RU";
 
@@ -1364,22 +1280,22 @@ spec:
 #  python ./extend.py ${lang} ${ltf_source} ${edl_cs_fine_protester} ${edl_cs_info}
 
 #            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-#            --lang_id ${lang_uk} --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} --cs_fnames ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/filler_${lang_uk}_all.cs ${relation_result_dir_uk}/${lang_uk}.rel.cs 
-#            ${relation_result_dir_uk}/new_relation_${lang_uk}.cs ${event_result_dir_uk}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab --fine_ent_type_json 
+#            --lang_id ${lang_uk} --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} --cs_fnames ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/filler_${lang_uk}_all.cs ${relation_result_dir_uk}/${lang_uk}.rel.cs
+#            ${relation_result_dir_uk}/new_relation_${lang_uk}.cs ${event_result_dir_uk}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab --fine_ent_type_json
 #            ${edl_output_dir_uk}/${lang_uk}.linking.freebase.fine.json --outdir ${relation_result_dir_uk} --fine_grained;
-            
+
 #            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_uk}/merged_fine.cs ${edl_output_dir_uk}/filler_fine.cs --output_file ${edl_output_dir_uk}/merged_all_fine.cs;
 #            echo `date` - "add protester UK";
-            
+
 #            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_uk}/en.event.cs ${edl_output_dir_uk}/merged_all_fine.cs ${edl_output_dir_uk}/merged_all_fine_protester.cs;
 #            echo `date` - "** Informative Justification ** UK";
-            
+
 #            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_uk}/chunk.txt ${edl_output_dir_uk}/merged_all_fine_protester.cs ${edl_output_dir_uk}/merged_all_fine_info.cs;
 #            echo `date` - "Completed entity_informative.py UK";
-            
-#            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_uk}${source_uk} ${edl_output_dir_uk}/${edl_tab_nam_uk} ${edl_output_dir_uk}/${edl_tab_nom_uk} 
-#            ${edl_output_dir_uk}/${edl_tab_pro_uk} ${edl_output_dir_uk}/${lang_uk}.linking.tab ${edl_output_dir_uk}/${lang_uk}.linking.tab.candidates.json ${ltf_source_uk} ${edl_output_dir_uk}/merged_all_fine_info.cs 
-#            ${edl_output_dir_uk}/merged_all_fine_info_conf.cs ${edl_output_dir_uk}/all_conf.txt;                      
+
+#            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_uk}${source_uk} ${edl_output_dir_uk}/${edl_tab_nam_uk} ${edl_output_dir_uk}/${edl_tab_nom_uk}
+#            ${edl_output_dir_uk}/${edl_tab_pro_uk} ${edl_output_dir_uk}/${lang_uk}.linking.tab ${edl_output_dir_uk}/${lang_uk}.linking.tab.candidates.json ${ltf_source_uk} ${edl_output_dir_uk}/merged_all_fine_info.cs
+#            ${edl_output_dir_uk}/merged_all_fine_info_conf.cs ${edl_output_dir_uk}/all_conf.txt;
 #            echo `date` - "Completed rewrite_mention_confidence.py UK";
 
         volumeMounts:
@@ -1387,9 +1303,9 @@ spec:
             mountPath: "/input"
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST) 
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
-#TODO: DAN all of the above --gpus device=1 
+#TODO: DAN all of the above --gpus device=1
 
 ################################
 ## EN - Event (Fine-grained)
@@ -1669,7 +1585,7 @@ spec:
 #    --event_cold_start_filename ${event_corefer} \	    --event_cold_start_filename ${event_corefer} \
 #
 # change pipeline merge to use these params:
-#    --cs_fnames ${edl_cs_info_conf} ${edl_cs_color} ${relation_4tuple} ${event_final} \ 
+#    --cs_fnames ${edl_cs_info_conf} ${edl_cs_color} ${relation_4tuple} ${event_final} \
           - echo `date` - "** Merging all items **";
             /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
            --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36;
@@ -1756,10 +1672,10 @@ spec:
 #          - mkdir -p /aida-tools-master/sample_params/m18-eval/output/WORKING/data;
 #            ln -s /output/WORKING/data/en /aida-tools-master/sample_params/m18-eval/output/WORKING/data;
 #            /aida-tools-master/aida-eval-tools/target/appassembler/bin/coldstart2AidaInterchange sample_params/m18-eval/${data_root}/converter.param;
-#            
+#
 #            ln -s /output/WORKING/data/ru /aida-tools-master/sample_params/m18-eval/output/WORKING/data;
 #            /aida-tools-master/aida-eval-tools/target/appassembler/bin/coldstart2AidaInterchange sample_params/m18-eval/${data_root_ru}/converter.param;
-#            
+#
 ##            ln -s /output/WORKING/data/uk /aida-tools-master/sample_params/m18-eval/output/WORKING/data;
 ##            /aida-tools-master/aida-eval-tools/target/appassembler/bin/coldstart2AidaInterchange sample_params/m18-eval/${data_root_uk}/converter.param;
 #        volumeMounts:
@@ -1841,20 +1757,6 @@ spec:
         args:
           #NOTE: KeyError here
           - echo `date` - "START append-private-information";
-            /opt/conda/envs/aida_entity/bin/python /postprocessing/postprocessing_append_private_data_m36.py
-            --language_id ${lang}${source}
-            --ltf_dir ${ltf_source}
-            --initial_folder ${data_root}/initial
-            --output_folder ${data_root}/initial_private_data
-            --fine_grained_entity_type_path ${edl_output_dir}/${lang}.linking.freebase.fine.json
-            --freebase_link_mapping ${edl_output_dir}/freebase_private_data.json
-            --lorelei_link_mapping ${edl_output_dir}/lorelei_private_data.json
-            --parent_child_tab_path ${parent_child_tab_path}
-            --parent_child_mapping_sorted ${sorted}
-            --ent_vec_dir ${edl_output_dir}
-            --ent_vec_files ${edl_vec_file1} ${edl_vec_file2} ${edl_vec_file3} ${edl_vec_file4}
-            --edl_tab ${edl_output_dir}/merged_final.tab
-            --eval m36;
 
             /opt/conda/envs/py36/bin/python postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang}${source} --input_private_folder ${data_root}/initial --output_folder ${data_root}/final
@@ -1868,20 +1770,6 @@ spec:
 
             echo `date` - "START RU append-private-information";
             /opt/conda/envs/aida_entity/bin/python /postprocessing/postprocessing_append_private_data_m36.py
-            --language_id ${lang_ru}${source_ru}
-            --ltf_dir ${ltf_source_ru}
-            --initial_folder ${data_root_ru}/initial
-            --output_folder ${data_root_ru}/initial_private_data
-            --fine_grained_entity_type_path ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json
-            --freebase_link_mapping ${edl_output_dir_ru}/freebase_private_data.json
-            --lorelei_link_mapping ${edl_output_dir_ru}/lorelei_private_data.json
-            --parent_child_tab_path ${parent_child_tab_path_ru}
-            --parent_child_mapping_sorted ${sorted_ru}
-            --ent_vec_dir ${edl_output_dir_ru}
-            --ent_vec_files ${edl_vec_file1_ru} ${edl_vec_file2_ru}
-            --edl_tab ${edl_output_dir_ru}/merged_final.tab
-            --eval m36
-            --translation_path ${edl_output_dir_ru}/${lang_ru}.linking.freebase.translations.json;
 
             /opt/conda/envs/py36/bin/python /postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang_ru}${source_ru}
@@ -1897,20 +1785,6 @@ spec:
             echo "Final RU result in RDF Format is in ${data_root_ru}/final";
 
             echo `date` - "START ES append-private-information";
-            /opt/conda/envs/aida_entity/bin/python /postprocessing/postprocessing_append_private_data.py
-            --language_id ${lang_es}${source_es}
-            --ltf_dir ${ltf_source_es}
-            --initial_folder ${data_root_es}/initial
-            --output_folder ${data_root_es}/initial_private_data
-            --fine_grained_entity_type_path ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json
-            --freebase_link_mapping ${edl_output_dir_es}/freebase_private_data.json
-            --lorelei_link_mapping ${edl_output_dir_es}/lorelei_private_data.json
-            --parent_child_tab_path ${parent_child_tab_path_es}
-            --parent_child_mapping_sorted ${sorted_es}
-            --ent_vec_dir ${edl_output_dir_es}
-            --ent_vec_files ${edl_vec_file1_es} ${edl_vec_file2_es}
-            --edl_tab ${edl_output_dir_es}/merged_final.tab
-            --translation_path ${edl_output_dir_es}/${lang_es}.linking.freebase.translations.json;
 
             /opt/conda/envs/py36/bin/python /postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang_es}${source_es}
@@ -2108,7 +1982,7 @@ spec:
 # $ OUTPUT=/host_output/
 # $ # please create the folder /columbia_vision_shared/ under the ${OUTPUT}/WORKING/ directory for output files
 # $ mkdir  ${OUTPUT}/WORKING/columbia_vision_shared/
-# please run the necessary modules (CU_Object_Detection, CU_Face/Flag/Landmark_Recognition and UIUC_Text_Pipeline) 
+# please run the necessary modules (CU_Object_Detection, CU_Face/Flag/Landmark_Recognition and UIUC_Text_Pipeline)
 # download the the required result files to the shared directory: ${OUTPUT}/WORKING/columbia_vision_shared/
 # $ GPU_ID=[a single integer index to the GPU]
 # $ docker run -itd -e CUDA_VISIBLE_DEVICES=${GPU_ID} --gpus ${GPU_ID} --name aida-gm -v columbia_visual_grounding_models/:/root/models -v ${INPUT}:/root/LDC:ro -v ${OUTPUT}/WORKING/columbia_vision_shared/:/root/shared aida-grounding-merging /bin/bash
@@ -2229,5 +2103,3 @@ spec:
       restartPolicy: Never
       nodeSelector:
         eks.amazonaws.com/nodegroup: gaia-eks-nodegroup
-
-
