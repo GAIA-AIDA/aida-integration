@@ -1728,11 +1728,12 @@ spec:
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_confidence.py
             ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${data_root_es}/${lang_es}${source_es}_full.cs ${data_root_es}/${lang_es}${source_es}_full_link.cs ${edl_output_dir_es}/lorelei_private_data.json;
             echo `date` - "** Format converter **";
-            echo `date` - "Start AIF converter";
+            echo `date` - "** START AIF converter";
             /opt/conda/envs/py36/bin/python /postprocessing/aif_converter.py
             --input_cs ${data_root_es}/${lang_es}${source_es}_full_link.cs --ltf_dir ${ltf_source_es}
             --output_ttl_dir ${data_root_es}/initial --lang ${lang_es}${source_es} --eval m36
             --evt_coref_score_tab ${event_result_dir_es}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_es};
+            echo `date` - "END AIF converter";
 
         volumeMounts:
           - name: input-efs
