@@ -106,7 +106,7 @@ spec:
 ## https://hub.docker.com/repository/docker/gaiaaida/object-detection
 ## See https://github.com/isi-vista/aida-integration/#columbia-university-object-detection
       - name: cu-object-detection
-        image: gaiaaida/object-detection:0.2
+        image: gaiaaida/object-detection:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -116,26 +116,21 @@ spec:
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/cu_objdet_results/"
         - name: CORPUS
-          value: "/output/WORKING/corpus/"
+          value: "/input"
         - name: INPUT
-          value: "/input/"
+          value: "/input"
         - name: OUTPUT
-          value: "/output/WORKING/"
+          value: "/output/WORKING"
         command: ["/bin/bash", "-c"]
         args:
-# code is looking for jpg in ${CORPUS}/data/jpg/jpg
-# but jpgs are in ${INPUT}/data/jpg (no second jpg directory)
          - echo `date` - "** START CU Object Detection **";
            echo "INPUT "${INPUT};
            echo "CORPUS "${CORPUS};
            echo "OUTPUT "${OUTPUT};
            echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
-           mkdir -p ${CORPUS}"data/jpg/jpg";
-           cp -r ${INPUT}"data/jpg" ${CORPUS}"data/jpg/jpg";
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
-           ls -ahl ${CORPUS}"data/jpg/jpg";
            mkdir -p ${OBJDET_OUTPUT};
            /bin/bash -c ./full_script.sh;
            ls -ahl /output/;
@@ -165,6 +160,12 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: CUDA_VISIBLE_DEVICES
           value: "0"
+        - name: INPUT
+          value: "/input"
+        - name: OUTPUT
+          value: "/output"
+        - name: SHARED
+          value: "/output/WORKING"
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/usc-object-detection/"
         command: ["/bin/bash", "-c"]
@@ -173,16 +174,18 @@ spec:
          - echo `date` - "** START USC Object Detection **";
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
+           echo "SHARED "${SHARED};
            echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
-           ls -ahl /input/data/jpg/jpg/;
            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
            mkdir -p ${OBJDET_OUTPUT};
            find . -name '*.pickle';
+           find ${OUTPUT} -name '*.pickle';
            cd /aida/src/;
-           python ./code/smoke_test.py;
-           python ./code/aida_ds_creator.py;
+           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py;
+           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py;
+           conda activate aida-env && which python;
            ls -ahl ./;
            RESULTS=./*.*;
            cp ${RESULTS} ${OBJDET_OUTPUT};
@@ -1959,7 +1962,7 @@ spec:
 ## https://hub.docker.com/repository/docker/gaiaaida/grounding-merging
 ## See https://github.com/isi-vista/aida-integration/#columbia-university-visual-grounding
       - name: cu-visual-grounding
-        image: gaiaaida/grounding-merging:0.2
+        image: gaiaaida/grounding-merging:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -1975,6 +1978,7 @@ spec:
             python ./smoke_test.py;
             python ./Feature_Extraction.py;
             python ./Visual_Grounding_mp.py;
+            source activate aida-env && which python;
             ls -ahl ${VISGRD_OUTPUT};
             find . -name '*.pickle';
             echo `date` - "END CU Visual Grounding";
@@ -2078,7 +2082,7 @@ spec:
 # $ docker run -itd -e CUDA_VISIBLE_DEVICES=${GPU_ID} --gpus ${GPU_ID} --name aida-gm -v columbia_visual_grounding_models/:/root/models -v ${INPUT}:/root/LDC:ro -v ${OUTPUT}/WORKING/columbia_vision_shared/:/root/shared aida-grounding-merging /bin/bash
 
       - name: cu-graph-merging
-        image: gaiaaida/grounding-merging:0.2
+        image: gaiaaida/grounding-merging:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -2096,6 +2100,7 @@ spec:
             mkdir -p ${MERGE_OUTPUT};
             python ./smoke_test.py;
             python ./Graph_Merging.py;
+            source activate aida-env && which python;
             RESULTS=./cu_graph_merging_ttl/;
             ls -ahl ${RESULTS};
             cp -r ${RESULTS} ${MERGE_OUTPUT};
