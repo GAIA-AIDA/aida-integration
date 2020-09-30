@@ -1444,11 +1444,11 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "START Informative Justification";
-          python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp;
-          python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs;
+            python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp;
+            python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs;
 
-          python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
-          python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs;
+            python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
+            python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs;
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
