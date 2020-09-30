@@ -1435,9 +1435,11 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: core_nlp_output_path_es
           value: "/output/WORKING/data/es/corenlp"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Event Fine Grained RU ES";
+          - echo `date` - "** START Event Fine Grained RU ES" &>> ${log_filename};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py
             ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab ${edl_output_dir_ru}/merged.cs
             ${event_result_dir_ru}/en.event.cs ${event_result_dir_ru}/events_fine.cs --filler_coarse ${edl_output_dir_ru}/filler_${lang_ru}.cs --entity_finegrain_aida ${edl_output_dir_ru}/merged_all_fine.cs;
@@ -1522,13 +1524,111 @@ spec:
           value: "/output/WORKING/data/es/rsd"
         - name: event_result_dir_es
           value: "/output/WORKING/data/es/event"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Event Coreference";
+          - echo `date` - "** START Event Coreference" &>> ${log_filename};
             /opt/conda/envs/aida_coreference/bin/python3.6 aida_event_coref.py
-            -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer} -t ${event_result_dir}/${event_corefer_confidence} -l ${ltf_source};
-            echo `date` - "END Event Coreference";
+            -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer} 
+            -t ${event_result_dir}/${event_corefer_confidence} -l ${ltf_source}
+            &>> ${log_filename};
+            echo `date` - "END Event Coreference" &>> ${log_filename};
 
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Temporal 4 tuple generation
+################################
+# en
+# docker run -i --rm -v ${data_root}:${data_root} \
+#     -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#     -w /EventTimeArg --gpus '"device=1"' wenhycs/uiuc_event_time \
+#     python aida_event_time_pipeline.py \
+#     --time_cold_start_filename ${filler_coarse} \
+#     --event_cold_start_filename ${event_corefer} \
+#     --read_cs_event \
+#     --parent_children_filename ${parent_child_tab_path} \
+#     --ltf_path ${ltf_source} \
+#     --output_filename ${event_corefer_time} \
+#     --use_dct_as_default \
+#     --lang ${lang}
+# # ru
+# docker run -i --rm -v ${data_root}:${data_root} \
+#     -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#     -w /EventTimeArg --gpus device=3 wenhycs/uiuc_event_time \
+#     python aida_event_time_pipeline.py \
+#     --time_cold_start_filename ${filler_coarse} \
+#     --event_cold_start_filename ${event_corefer} \
+#     --parent_children_filename ${parent_child_tab_path} \
+#     --output_filename ${event_corefer_time} \
+#     --lang ${lang}
+# # es
+# docker run -i --rm -v ${data_root}:${data_root} \
+#     -v ${parent_child_tab_path}:${parent_child_tab_path} \
+#     -w /EventTimeArg --gpus device=2 wenhycs/uiuc_event_time \
+#     python aida_event_time_pipeline.py \
+#     --time_cold_start_filename ${filler_coarse} \
+#     --event_cold_start_filename ${event_corefer} \
+#     --parent_children_filename ${parent_child_tab_path} \
+#     --output_filename ${event_corefer_time} \
+#     --lang ${lang}
+      - name: temporal-4-tuple
+        image: wenhycs/uiuc_event_time
+        imagePullPolicy: IfNotPresent
+# TODO DAN how do we run this on docker using '--gpus device=1'
+        workingDir: /EventTimeArg
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: time_cold_start_filename
+          value: "/output/WORKING/data/en/edl/filler_en.cs"
+        - name: event_cold_start_filename
+          value: "/output/WORKING/data/en/event/events_corefer.cs"
+        - name: parent_child_tab_path
+          value: "/input/docs/parent_children.tab"
+        - name: ltf_path
+          value: "/output/WORKING/data/en/ltf"
+        - name: output_filename
+          value: "/output/WORKING/data/en/event/events_4tuple.cs"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: time_cold_start_filename_ru
+          value: "/output/WORKING/data/ru/edl/filler_ru.cs"
+        - name: event_cold_start_filename_ru
+          value: "/output/WORKING/data/ru/event/events_corefer.cs"
+        - name: parent_child_tab_path_ru
+          value: "/input/docs/parent_children.tab"
+        - name: output_filename_ru
+          value: "/output/WORKING/data/ru/event/events_4tuple.cs"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: time_cold_start_filename_es
+          value: "/output/WORKING/data/es/edl/filler_es.cs"
+        - name: event_cold_start_filename_es
+          value: "/output/WORKING/data/es/event/events_corefer.cs"
+        - name: parent_child_tab_path_es
+          value: "/input/docs/parent_children.tab"
+        - name: output_filename_es
+          value: "/output/WORKING/data/es/event/events_4tuple.cs"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START Temporal 4 tuple generation **" &>> ${log_filename};
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename {event_cold_start_filename} --read_cs_event --parent_children_filename {parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename {output_filename} --lang {lang} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename {event_cold_start_filename_ru} --parent_children_filename {parent_child_tab_path_ru} --output_filename {output_filename_ru} --lang {lang_ru} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename {event_cold_start_filename_es} --parent_children_filename {parent_child_tab_path_es} --output_filename {output_filename_es} --lang {lang_es} &
+           wait &>> ${log_filename};
+           echo `date` - "END Temporal 4 tuple generation **" &>> ${log_filename};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
