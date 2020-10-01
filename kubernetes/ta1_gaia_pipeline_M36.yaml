@@ -1243,7 +1243,7 @@ spec:
 
 
 ################################
-## Relation Extraction (fine)
+## Relation Extraction (fine) part 1
 ################################
 
       - name: relation-extraction-fine-part1
@@ -1320,7 +1320,10 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
-      - name: relation-extraction_event_time
+################################
+## Relation Extraction event time
+################################
+      - name: relation-extraction-event-time
         image: wenhycs/uiuc_event_time
         imagePullPolicy: IfNotPresent
         workingDir: /EventTimeArg
@@ -1355,6 +1358,9 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+################################
+## Relation Extraction (fine) part 2
+################################
 
       - name: relation-extraction-fine-part2
         image: limanling/uiuc_ie_m36
@@ -1433,6 +1439,9 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+################################
+## Informative Justification
+################################
 
       - name: informative-justification
         image: panx27/aida20_mention
@@ -1497,6 +1506,10 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Relation Extraction (fine) part 3
+################################
 
       - name: relation-extraction-fine-part3
         image: limanling/uiuc_ie_m36
