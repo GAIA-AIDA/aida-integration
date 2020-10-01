@@ -47,16 +47,22 @@ spec:
           value: "/output/WORKING/mp4"
         - name: log_filename
           value: "/output/WORKING/full-text-log.txt"
+        - name: param_filename
+          value: "/output/WORKING/usc.objdet.M36.param"
         command: ["/bin/bash", "-c"]
         args:
+#            echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" &>> ${param_filename};
          - echo `date` - "** START AIDA Tools **";
-           mkdir -p /output/WORKING;
+           mkdir -p /output/WORKING/data;
            echo `date` - "** START AIDA Tools **" &>> ${log_filename};
-           ls -ahl ${INPUT_MP4_LDCC} &>> ${log_filename};
            mkdir -p ${OUTPUT_MP4};
-           echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" > ./M36.param;
-           cat ./M36.param  &>> ${log_filename};
-           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ./M36.param  &>> ${log_filename};
+           echo "input_mp4_ldcc_dir:" "/input/data/mp4" &>> ${param_filename};
+           echo "output_mp4_dir:" "/output/WORKING/mp4" &>> ${param_filename};
+           pwd &>> ${log_filename};
+           ls -ahl /output/WORKING &>> ${log_filename};
+           cat ${param_filename} &>> ${log_filename};
+           echo  "extract_mp4.py >>>" &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ${param_filename} &>> ${log_filename};
            ls -ahl ${OUTPUT_MP4}  &>> ${log_filename};
            echo `date` - "END AIDA Tools" &>> ${log_filename};
 
@@ -87,14 +93,16 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: CUDA_VISIBLE_DEVICES
           value: "0"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-         - echo `date` - "** START ASR **";
-           ls -ahl /output/WORKING/mp4/;
+         - echo `date` - "** START ASR **" &>> ${log};
+           ls -ahl /output/WORKING/mp4/ &>> ${log};
            mkdir -p /output/WORKING/output/;
-           /bin/bash -c ./entrypoint.sh;
-           ls -ahl /output/WORKING/output/;
-           echo `date` - "END ASR"};
+           /bin/bash -c ./entrypoint.sh &>> ${log};
+           ls -ahl /output/WORKING/output/ &>> ${log};
+           echo `date` - "END ASR" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -157,7 +165,7 @@ spec:
 ## See https://github.com/isi-vista/aida-integration/#usc-object-detection
 
       - name: usc-object-detection
-        image: gaiaaida/detection-grounding:0.2
+        image: gaiaaida/detection-grounding:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -172,6 +180,8 @@ spec:
           value: "/output/WORKING"
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/usc-object-detection/"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
 # Output is located at /upload/USC_Vision_Data/m18_eval/. 
@@ -180,27 +190,19 @@ spec:
 # Each contains 4 files; 3 of them are about jpg, png, representative_frames, 
 # and the last one just has all of them in one file.
 # this should only do the USC object detection, not the grounding.
-         - echo `date` - "** START USC Object Detection **";
+         - echo `date` - "** START USC Object Detection **" &>> ${log_filename};
            mkdir -p /upload/USC_Vision_Data/m18_eval/;
-           echo "INPUT "${INPUT};
-           echo "OUTPUT "${OUTPUT};
-           echo "SHARED "${SHARED};
-           echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
-           ls -ahl /input/docs/;
-           ls -ahl /input/data/jpg/;
-           ls -ahl /input/data/video_shot_boundaries/representative_frames/;
            mkdir -p ${OBJDET_OUTPUT};
-           find /upload/USC_Vision_Data/m18_eval -name '*.pickle';
-           find ${OUTPUT} -name '*.pickle';
            cd /aida/src/;
-           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py;
-           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py;
-           conda activate aida-env && which python;
-           find /upload/USC_Vision_Data/m18_eval -name '*.*';
+           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log_filename};
+           pwd &>> ${log_filename};
+           ls -ahl ./data &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log_filename};
+           find /upload/USC_Vision_Data/m18_eval -name '*.*'  &>> ${log_filename};
            RESULTS=/upload/USC_Vision_Data/m18_eval;
-           ls -ahl ${RESULTS}
-           cp -r ${RESULTS} ${OBJDET_OUTPUT};
-           echo `date` - "END USC Object Detection";
+           ls -ahl ${RESULTS}  &>> ${log_filename};
+           cp -r ${RESULTS} ${OBJDET_OUTPUT} &>> ${log_filename};
+           echo `date` - "END USC Object Detection" &>> ${log_filename};
 # TODO: confirm exact files copied out.
         volumeMounts:
           - name: input-efs
@@ -389,28 +391,30 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: sorted
           value: "0"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START generate bio list **";
+          - echo `date` - "** START generate bio list **" &>> ${log};
             mkdir -p /output/WORKING/data/es/ltf;
             mkdir -p /output/WORKING/data/en/ltf;
             mkdir -p /output/WORKING/data/ru/ltf;
             mkdir -p /output/WORKING/data/es/edl;
             mkdir -p /output/WORKING/data/en/edl;
             mkdir -p /output/WORKING/data/ru/edl;
-            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source} ${edl_bio};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source} ${rsd_file_list};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source} ${ltf_file_list};
-            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab};
-            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source_ru} ${edl_bio_ru};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_ru} ${rsd_file_list_ru};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_ru} ${ltf_file_list_ru};
-            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_ru};
-            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source_es} ${edl_bio_es};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_es} ${rsd_file_list_es};
-            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_es} ${ltf_file_list_es};
-            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_es};
-            echo `date` - "END generate bio list";
+            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source} ${edl_bio} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source} ${rsd_file_list} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source} ${ltf_file_list} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source_ru} ${edl_bio_ru} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_ru} ${rsd_file_list_ru} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_ru} ${ltf_file_list_ru} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_ru} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${ltf_source_es} ${edl_bio_es} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_es} ${rsd_file_list_es} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_es} ${ltf_file_list_es} &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_es} &>> ${log};
+            echo `date` - "END generate bio list" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -432,11 +436,13 @@ spec:
           value: "0"
         - name: timetable_tab
           value: "/output/WORKING/data/en/time_table.tab"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START timetable tab **";
-            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab};
-            echo `date` - "END timetable tab";
+          - echo `date` - "** START timetable tab **" &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab} &>> ${log};
+            echo `date` - "END timetable tab" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -479,14 +485,16 @@ spec:
           value: "/output/WORKING/data/es/time_table.tab"
         - name: core_nlp_output_path_es
           value: "/output/WORKING/data/es/corenlp"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START apply Stanford corenlp **";
+          - echo `date` - "** START apply Stanford corenlp **" &>> ${log};
             java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list} -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
             java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_ru} -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
             java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_es} -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
-            wait;
-            echo `date` - "END apply Stanford corenlp";
+            wait &>> ${log};
+            echo `date` - "END apply Stanford corenlp" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -541,25 +549,27 @@ spec:
           value: "/output/WORKING/data/es/rsd"
         - name: chunk_file_es
           value: "/output/WORKING/data/es/edl/chunk.txt"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START universal dependency parser chunk **";
+          - echo `date` - "** START universal dependency parser chunk **" &>> ${log};
             mkdir -p ${udp_dir};
             mkdir -p ${udp_dir_ru};
             mkdir -p ${udp_dir_es};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path} --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir};
-            echo "finish universal dependency parser for "${lang};
-            python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file};
-            echo "finish chunking for "${lang};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path_ru} --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru};
-            echo "finish universal dependency parser for "${lang_ru};
-            python chunk_mine.py --udp_dir ${udp_dir_ru} --text_dir ${rsd_source_ru} --path_out_chunk ${chunk_file_ru};
-            echo "finish chunking for "${lang_ru};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path_es} --lang ${lang_es} --path_bio ${edl_bio_es} --udp_dir ${udp_dir_es};
-            echo "finish universal dependency parser for "${lang_es};
-            python chunk_mine.py --udp_dir ${udp_dir_es} --text_dir ${rsd_source_es} --path_out_chunk ${chunk_file_es};
-            echo "finish chunking for "${lang_es};
-            echo `date` - "END universal dependency parser chunk";
+            python bio2udp.py --corenlp_dir ${core_nlp_output_path} --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
+            echo "finish universal dependency parser for "${lang} &>> ${log};
+            python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file} &>> ${log};
+            echo "finish chunking for "${lang} &>> ${log};
+            python bio2udp.py --corenlp_dir ${core_nlp_output_path_ru} --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru} &>> ${log};
+            echo "finish universal dependency parser for "${lang_ru} &>> ${log};
+            python chunk_mine.py --udp_dir ${udp_dir_ru} --text_dir ${rsd_source_ru} --path_out_chunk ${chunk_file_ru} &>> ${log};
+            echo "finish chunking for "${lang_ru} &>> ${log};
+            python bio2udp.py --corenlp_dir ${core_nlp_output_path_es} --lang ${lang_es} --path_bio ${edl_bio_es} --udp_dir ${udp_dir_es} &>> ${log};
+            echo "finish universal dependency parser for "${lang_es} &>> ${log};
+            python chunk_mine.py --udp_dir ${udp_dir_es} --text_dir ${rsd_source_es} --path_out_chunk ${chunk_file_es} &>> ${log};
+            echo "finish chunking for "${lang_es} &>> ${log};
+            echo `date` - "END universal dependency parser chunk" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -601,18 +611,19 @@ spec:
           value: "/output/WORKING/data/es/event/'ltf_txt'"
         - name: framenet_path_es
           value: "/output/WORKING/data/es/event/'framenet_res'"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START process-framenet-generate **";
+          - echo `date` - "** START process-framenet-generate **" &>> ${log};
             mkdir -p /output/WORKING/data/en/event;
             mkdir -p /output/WORKING/data/ru/event;
             mkdir -p /output/WORKING/data/es/event;
-            echo `date` - "START Process Framenet Generate";
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang} ${ltf_source} ${ltf_txt_path} ${framenet_path} &
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_ru} ${ltf_source_ru} ${ltf_txt_path_ru} ${framenet_path_ru} &
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_es} ${ltf_source_es} ${ltf_txt_path_es} ${framenet_path_es} &
-            wait;
-            echo `date` - "END Process Framenet Generate";
+            wait &>> ${log};
+            echo `date` - "END Process Framenet Generate" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -646,14 +657,16 @@ spec:
         #ALL
         - name: thread_num
           value: "3"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Run Semafor";
+          - echo `date` - "START Run Semafor" &>> ${log};
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_ru} ${framenet_path_ru} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_es} ${framenet_path_es} ${thread_num} &
-            wait;
-            echo `date` - "END Run Semafor";
+            wait &>> ${log};
+            echo `date` - "END Run Semafor" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -697,14 +710,16 @@ spec:
           value: "/output/WORKING/data/es/ltf"
         - name: data_root_es
           value: "/output/WORKING/data/es"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START OneIE";
+          - echo `date` - "** START OneIE" &>> ${log};
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source} -o ${data_root} -l {lang} --output_hidden &
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_ru} -o ${data_root_ru} -l {lang_ru} --output_hidden &
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_es} -o ${data_root_es} -l {lang_es} --output_hidden &
-            wait;
-            echo `date` - "END OneIE";
+            wait &>> ${log};
+            echo `date` - "END OneIE" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -753,15 +768,17 @@ spec:
           value: “/output/WORKING/data/es/mention/spanish.nam.bio”
         - name: entity_fine_model_es
           value: "/output/WORKING/data/es/edl/merged_fine.tsv"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl entity extraction";
+          - echo `date` - "START edl entity extraction" &>> ${log};
             sed -i 's/0.0.0.0/aida-entity/' /entity/aida_edl/edl.py;
             /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang} ${edl_tab_nam_bio} ${entity_fine_model} &
             /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_ru} ${edl_tab_nam_bio_ru} ${entity_fine_model_ru} &
             /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_es} ${edl_tab_nam_bio_es} ${entity_fine_model_es} &
-            wait;
-            echo `date` - "END edl entity extraction";
+            wait &>> ${log};
+            echo `date` - "END edl entity extraction" &>> ${log};
             #modify /entity/aida_edl/edl.py - line 13 - url = 'http://0.0.0.0:5500/tagging' -> url = 'http://aida-entity:5500/tagging'
         volumeMounts:
           - name: input-efs
@@ -816,20 +833,22 @@ spec:
           value: "/output/WORKING/data/es/mention/es.pro.tagged.tab"
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
           # gonna symlink it here to avoid new volumes
-          - echo `date` - "START edl linking";
+          - echo `date` - "START edl linking" &>> ${log};
             ln -s /output/WORKING/data/edl_data /data;
-            ls -ahl /output/WORKING/data/;
-            ls -ahl /output/WORKING/data/edl_data;
-            ls -ahl /output/WORKING/data/es/;
-            ls -ahl /output/WORKING/data/es/edl/;
+            ls -ahl /output/WORKING/data/ &>> ${log};
+            ls -ahl /output/WORKING/data/edl_data &>> ${log};
+            ls -ahl /output/WORKING/data/es/ &>> ${log};
+            ls -ahl /output/WORKING/data/es/edl/ &>> ${log};
             python ./projs/docker_aida19/aida19.py ${lang} ${edl_tab_nam_filename} ${edl_tab_nom_filename} ${edl_tab_pro_filename} ${edl_output_dir} m36 &
             python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_tab_nam_filename_ru} ${edl_tab_nom_filename_ru} ${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
             python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es} ${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
-            wait;
-            echo `date` - "END edl linking";
+            wait &>> ${log};
+            echo `date` - "END edl linking" &>> ${log};
           #NOTE: why is there a testdata_? Was this just part of a testing script?
         volumeMounts:
           - name: input-efs
@@ -860,13 +879,15 @@ spec:
           value: "en.linking.tab"
         - name: edl_tab_link_fb
           value: "en.linking.freebase.tab"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl-nominal-coreference-en";
-            echo "Begin edl-nominal-coreference-en for "${edl_tab_link};
-            ls -ahl ${data_root};
-            /opt/conda/envs/aida_coreference/bin/python3.6 /app/aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab;
-            echo `date` - "END edl-nominal-coreference-en";
+          - echo `date` - "START edl-nominal-coreference-en" &>> ${log};
+            echo "Begin edl-nominal-coreference-en for "${edl_tab_link} &>> ${log};
+            ls -ahl ${data_root} &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 /app/aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab &>> ${log};
+            echo `date` - "END edl-nominal-coreference-en" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -886,13 +907,15 @@ spec:
         env:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START tab2cs";
+          - echo `date` - "START tab2cs" &>> ${log};
             ls -ahl ${edl_output_dir};
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL';
-            ls -ahl ${edl_output_dir};
-            echo `date` - "END tab2cs";
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL' &>> ${log};
+            ls -ahl ${edl_output_dir} &>> ${log};
+            echo `date` - "END tab2cs" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -924,14 +947,16 @@ spec:
           value: "/output/WORKING/data/es/edl/es.linking.tab"
         - name: edl_tab_final_es
           value: "/output/WORKING/data/es/edl/merged_final.tab"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl-nominal-conference-ru-es";
+          - echo `date` - "START edl-nominal-conference-ru-es" &>> ${log};
             python appos_extract.py --udp_dir ${udp_dir} --edl_tab_path ${edl_tab_link} --path_out_coref ${edl_tab_final} &
             python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &
             python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &
-            wait;
-            echo `date` - "END edl-nominal-conference-ru-es";
+            wait &>> ${log};;
+            echo `date` - "END edl-nominal-conference-ru-es" &>> ${log};;
 
         volumeMounts:
           - name: input-efs
