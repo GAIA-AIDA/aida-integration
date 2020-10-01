@@ -45,16 +45,20 @@ spec:
           value: "/input/data/mp4"
         - name: OUTPUT_MP4
           value: "/output/WORKING/mp4"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START AIDA Tools **";
-           ls -ahl ${INPUT_MP4_LDCC};
+           mkdir -p /output/WORKING;
+           echo `date` - "** START AIDA Tools **" &>> ${log_filename};
+           ls -ahl ${INPUT_MP4_LDCC} &>> ${log_filename};
            mkdir -p ${OUTPUT_MP4};
            echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" > ./M36.param;
-           cat ./M36.param;
-           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ./M36.param;
-           ls -ahl ${OUTPUT_MP4};
-           echo `date` - "END AIDA Tools";
+           cat ./M36.param  &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ./M36.param  &>> ${log_filename};
+           ls -ahl ${OUTPUT_MP4}  &>> ${log_filename};
+           echo `date` - "END AIDA Tools" &>> ${log_filename};
 
         volumeMounts:
           - name: input-efs
@@ -170,8 +174,14 @@ spec:
           value: "/output/WORKING/usc-object-detection/"
         command: ["/bin/bash", "-c"]
         args:
+# Output is located at /upload/USC_Vision_Data/m18_eval/. 
+# There are two folders: one using pascal voc (m18_eval_usc_vision_voc) 
+# and other using oi (m18_eval_usc_vision_oi). 
+# Each contains 4 files; 3 of them are about jpg, png, representative_frames, 
+# and the last one just has all of them in one file.
 # this should only do the USC object detection, not the grounding.
          - echo `date` - "** START USC Object Detection **";
+           mkdir -p /upload/USC_Vision_Data/m18_eval/;
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
            echo "SHARED "${SHARED};
@@ -180,15 +190,16 @@ spec:
            ls -ahl /input/data/jpg/;
            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
            mkdir -p ${OBJDET_OUTPUT};
-           find . -name '*.pickle';
+           find /upload/USC_Vision_Data/m18_eval -name '*.pickle';
            find ${OUTPUT} -name '*.pickle';
            cd /aida/src/;
            /root/conda/envs/aida-env/bin/python ./code/smoke_test.py;
            /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py;
            conda activate aida-env && which python;
-           ls -ahl ./;
-           RESULTS=./*.*;
-           cp ${RESULTS} ${OBJDET_OUTPUT};
+           find /upload/USC_Vision_Data/m18_eval -name '*.*';
+           RESULTS=/upload/USC_Vision_Data/m18_eval;
+           ls -ahl ${RESULTS}
+           cp -r ${RESULTS} ${OBJDET_OUTPUT};
            echo `date` - "END USC Object Detection";
 # TODO: confirm exact files copied out.
         volumeMounts:
