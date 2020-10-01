@@ -210,6 +210,7 @@ spec:
            mkdir -p /output/WORKING/system/aida_edl;
            mkdir -p /output/WORKING/system/rsd;
            wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl;
+           mkdir -p /output/WORKING/data;
            tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
            perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf;
            echo `date` - "END setup edl rsd";
