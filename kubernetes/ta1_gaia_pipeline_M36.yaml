@@ -1199,11 +1199,264 @@ spec:
 #          - name: output-efs
 #            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+
 ################################
 ## Relation Extraction (fine)
 ################################
 
-      - name: relation-extraction-fine
+      - name: relation-extraction-fine-part1
+        image: limanling/uiuc_ie_m36
+        imagePullPolicy: IfNotPresent
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: edl_output_dir
+          value: "/output/WORKING/data/en/edl"
+        - name: source
+          value: "" # no asr or ocr atm
+        - name: ltf_source
+          value: "/output/WORKING/data/en/ltf"
+        - name: rsd_source
+          value: "/output/WORKING/data/en/rsd"
+        - name: event_result_dir
+          value: "/output/WORKING/data/en/event"
+        - name: relation_result_dir
+          value: "/output/WORKING/data/en/relation"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: edl_output_dir_ru
+          value: "/output/WORKING/data/ru/edl"
+        - name: source_ru
+          value: "" # no asr or ocr atm
+        - name: ltf_source_ru
+          value: "/output/WORKING/data/ru/ltf"
+        - name: rsd_source_ru
+          value: "/output/WORKING/data/ru/rsd"
+        - name: event_result_dir_ru
+          value: "/output/WORKING/data/ru/event"
+        - name: relation_result_dir_ru
+          value: "/output/WORKING/data/ru/relation"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: edl_output_dir_es
+          value: "/output/WORKING/data/es/edl"
+        - name: source_es
+          value: "" # no asr or ocr atm
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
+        - name: relation_result_dir_es
+          value: "/output/WORKING/data/es/relation"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "START relation extraction fine (Part 1)";
+            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
+            --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs
+            ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json
+            ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
+
+            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
+            --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${relation_result_dir_ru}/new_relation_${lang_ru}.cs
+            ${event_result_dir_ru}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json
+            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained;
+
+            /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py
+            --lang_id ${lang_es} --ltf_dir ${ltf_source_es} --rsd_dir ${rsd_source_es} --cs_fnames ${edl_output_dir_es}/merged.cs ${edl_output_dir_es}/filler_${lang_es}_all.cs ${relation_result_dir_es}/${lang_es}.rel.cs ${relation_result_dir_es}/new_relation_${lang_es}.cs
+            ${event_result_dir_es}/event_rewrite.cs  --fine_ent_type_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json
+            --outdir ${relation_result_dir_es} --fine_grained;
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+      - name: relation-extraction_event_time
+        image: wenhycs/uiuc_event_time
+        imagePullPolicy: IfNotPresent
+        workingDir: /EventTimeArg
+        env:
+        - name: parent_child_tab_path
+          value: "/input/docs/parent_children.tab"
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: relation_result_dir
+          value: "/output/WORKING/data/en/relation"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: relation_result_dir_ru
+          value: "/output/WORKING/data/ru/relation"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: relation_result_dir_es
+          value: "/output/WORKING/data/es/relation"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "START aida_event_time_pipeline";
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir}/${lang}/${lang}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs;
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}_rel_4tuple.cs;
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_es}/${lang_es}/${lang_es}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_es}/${lang_es}/${lang_es}_rel_4tuple.cs;
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+
+      - name: relation-extraction-fine-part2
+        image: limanling/uiuc_ie_m36
+        imagePullPolicy: IfNotPresent
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: edl_output_dir
+          value: "/output/WORKING/data/en/edl"
+        - name: source
+          value: "" # no asr or ocr atm
+        - name: ltf_source
+          value: "/output/WORKING/data/en/ltf"
+        - name: rsd_source
+          value: "/output/WORKING/data/en/rsd"
+        - name: event_result_dir
+          value: "/output/WORKING/data/en/event"
+        - name: relation_result_dir
+          value: "/output/WORKING/data/en/relation"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: edl_output_dir_ru
+          value: "/output/WORKING/data/ru/edl"
+        - name: source_ru
+          value: "" # no asr or ocr atm
+        - name: ltf_source_ru
+          value: "/output/WORKING/data/ru/ltf"
+        - name: rsd_source_ru
+          value: "/output/WORKING/data/ru/rsd"
+        - name: event_result_dir_ru
+          value: "/output/WORKING/data/ru/event"
+        - name: relation_result_dir_ru
+          value: "/output/WORKING/data/ru/relation"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: edl_output_dir_es
+          value: "/output/WORKING/data/es/edl"
+        - name: source_es
+          value: "" # no asr or ocr atm
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
+        - name: relation_result_dir_es
+          value: "/output/WORKING/data/es/relation"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "START relation extraction fine (Part 2)";
+
+            echo `date` - "english";
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
+            echo `date` - "add protester";
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/event_rewrite.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs;
+
+            echo `date` - "russian";
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs;
+            echo `date` - "add protester RU";
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/event_rewrite.css ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs;
+            echo `date` - "** Informative Justification ** RU";
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
+
+            echo `date` - "spanish";
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs --output_file ${edl_output_dir_es}/merged_all_fine.cs;
+            echo `date` - "add protester ES";
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_es}/event_rewrite.css ${edl_output_dir_es}/merged_all_fine.cs ${edl_output_dir_es}/merged_all_fine_protester.cs;
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+
+      - name: informative-justification
+        image: panx27/aida20_mention
+        imagePullPolicy: IfNotPresent
+        env:
+        #ENGLISH
+        - name: lang
+          value: "en"
+        - name: edl_output_dir
+          value: "/output/WORKING/data/en/edl"
+        - name: source
+          value: "" # no asr or ocr atm
+        - name: ltf_source
+          value: "/output/WORKING/data/en/ltf"
+        - name: rsd_source
+          value: "/output/WORKING/data/en/rsd"
+        - name: event_result_dir
+          value: "/output/WORKING/data/en/event"
+        - name: relation_result_dir
+          value: "/output/WORKING/data/en/relation"
+        #RUSSIAN
+        - name: lang_ru
+          value: "ru"
+        - name: edl_output_dir_ru
+          value: "/output/WORKING/data/ru/edl"
+        - name: source_ru
+          value: "" # no asr or ocr atm
+        - name: ltf_source_ru
+          value: "/output/WORKING/data/ru/ltf"
+        - name: rsd_source_ru
+          value: "/output/WORKING/data/ru/rsd"
+        - name: event_result_dir_ru
+          value: "/output/WORKING/data/ru/event"
+        - name: relation_result_dir_ru
+          value: "/output/WORKING/data/ru/relation"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: edl_output_dir_es
+          value: "/output/WORKING/data/es/edl"
+        - name: source_es
+          value: "" # no asr or ocr atm
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
+        - name: relation_result_dir_es
+          value: "/output/WORKING/data/es/relation"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "START Informative Justification";
+            python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp;
+            python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs;
+
+            python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
+            python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs;
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+      - name: relation-extraction-fine-part3
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
         env:
@@ -1272,71 +1525,22 @@ spec:
           value: "es.pro.tagged.tab"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START relation extraction fine";
-            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-            --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${event_result_dir}/en.event.cs
-            ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/events_tme.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json
-            ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
+          - echo `date` - "START relation extraction fine (Part 3)";
 
-            echo `date` - "add protester";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/en.event.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs;
-            echo `date` - "** Informative Justification **";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir}/chunk.txt ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs;
-
-            echo `date` - "Completed entity_informative.py";
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom}
             ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs
             ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py";
 
-            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-            --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${event_result_dir_ru}/en.event.cs
-            ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json
-            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained;
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs;
-            echo `date` - "add protester RU";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/en.event.css ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs;
-            echo `date` - "** Informative Justification ** RU";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
-            echo `date` - "Completed entity_informative.py RU";
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru}
             ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs
             ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt;
             echo `date` - "Completed rewrite_mention_confidence.py RU";
 
-# TODO: between # Relation Extraction (fine) and  ## Postprocessing, adding informative justification the following needs to be inserted:
-#relation_4tuple=${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs
-#docker run -i -t --rm -v ${data_root}:${data_root} \
-#    -v ${parent_child_tab_path}:${parent_child_tab_path} \
-#    -w /EventTimeArg --gpus device=1 wenhycs/uiuc_event_time \
-#    python aida_event_time_pipeline.py \
-#    --relation_cold_start_filename ${relation_cs_fine} --relation \
-#    --parent_children_filename ${parent_child_tab_path} \
-#    --output_filename ${relation_4tuple}
-
-# TODO: the above line entity_informative.py needs to be replaced with:
-# docker run --rm -v ${data_root}:${data_root} -i panx27/aida20_mention \
-#  python ./extend.py ${lang} ${ltf_source} ${edl_cs_fine_protester} ${edl_cs_info}
-
-#            /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
-#            --lang_id ${lang_uk} --ltf_dir ${ltf_source_uk} --rsd_dir ${rsd_source_uk} --cs_fnames ${edl_output_dir_uk}/merged.cs ${edl_output_dir_uk}/filler_${lang_uk}_all.cs ${relation_result_dir_uk}/${lang_uk}.rel.cs
-#            ${relation_result_dir_uk}/new_relation_${lang_uk}.cs ${event_result_dir_uk}/events_tme.cs --fine_ent_type_tab ${edl_output_dir_uk}/${lang_uk}.linking.freebase.tab --fine_ent_type_json
-#            ${edl_output_dir_uk}/${lang_uk}.linking.freebase.fine.json --outdir ${relation_result_dir_uk} --fine_grained;
-
-#            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_uk}/merged_fine.cs ${edl_output_dir_uk}/filler_fine.cs --output_file ${edl_output_dir_uk}/merged_all_fine.cs;
-#            echo `date` - "add protester UK";
-
-#            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_uk}/en.event.cs ${edl_output_dir_uk}/merged_all_fine.cs ${edl_output_dir_uk}/merged_all_fine_protester.cs;
-#            echo `date` - "** Informative Justification ** UK";
-
-#            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_uk}/chunk.txt ${edl_output_dir_uk}/merged_all_fine_protester.cs ${edl_output_dir_uk}/merged_all_fine_info.cs;
-#            echo `date` - "Completed entity_informative.py UK";
-
-#            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_uk}${source_uk} ${edl_output_dir_uk}/${edl_tab_nam_uk} ${edl_output_dir_uk}/${edl_tab_nom_uk}
-#            ${edl_output_dir_uk}/${edl_tab_pro_uk} ${edl_output_dir_uk}/${lang_uk}.linking.tab ${edl_output_dir_uk}/${lang_uk}.linking.tab.candidates.json ${ltf_source_uk} ${edl_output_dir_uk}/merged_all_fine_info.cs
-#            ${edl_output_dir_uk}/merged_all_fine_info_conf.cs ${edl_output_dir_uk}/all_conf.txt;
-#            echo `date` - "Completed rewrite_mention_confidence.py UK";
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es}${source_es} ${edl_output_dir_es}/${edl_tab_nam_es} ${edl_output_dir_es}/${edl_tab_nom_es}
+            ${edl_output_dir_es}/${edl_tab_pro_ru} ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs
+            ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt;
+            echo `date` - "Completed rewrite_mention_confidence.py ES";
 
         volumeMounts:
           - name: input-efs
@@ -1344,6 +1548,7 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
 
 #TODO: DAN all of the above --gpus device=1
 
@@ -1530,7 +1735,7 @@ spec:
         args:
           - echo `date` - "** START Event Coreference" &>> ${log_filename};
             /opt/conda/envs/aida_coreference/bin/python3.6 aida_event_coref.py
-            -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer} 
+            -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer}
             -t ${event_result_dir}/${event_corefer_confidence} -l ${ltf_source}
             &>> ${log_filename};
             echo `date` - "END Event Coreference" &>> ${log_filename};
