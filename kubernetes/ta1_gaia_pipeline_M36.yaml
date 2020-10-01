@@ -214,16 +214,19 @@ spec:
 ################################
       - name: setup-edl-rsd
         image: limanling/uiuc_ie_m36
+        env:
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-         - echo `date` - "** START setup edl rsd **";
+         - echo `date` - "** START setup edl rsd **" &>> ${log};
            mkdir -p /output/WORKING/system/data;
            mkdir -p /output/WORKING/system/aida_edl;
            mkdir -p /output/WORKING/system/rsd;
-           wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl;
-           tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
-           perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf;
-           echo `date` - "END setup edl rsd";
+           wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl &>> ${log};
+           tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data &>> ${log};
+           perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf &>> ${log};
+           echo `date` - "END setup edl rsd" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: /input
@@ -236,16 +239,17 @@ spec:
 ###############################
       - name: detect-lang
         image: limanling/uiuc_ie_m36
-
-# 2020-09-21 ADD --langs en ru es --parent_child_tab_path ${parent_child_tab_path}
-#        command: ["/opt/conda/envs/py36/bin/python", "/preprocessing/preprocess_detect_languages.py", "/output/WORKING/system/rsd", "/input/data/ltf", "/output/WORKING/data", "--langs en ru es", "--parent_child_tab_path /input/docs/parent_children.tab"]
-
+        env:
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START detect lang **";
+          - echo `date` - "** START detect lang **" &>> ${log};
             /opt/conda/envs/py36/bin/python /preprocessing/preprocess_detect_languages.py /output/WORKING/system/rsd /input/data/ltf /output/WORKING/data --langs en ru es --parent_child_tab_path /input/docs/parent_children.tab &
-            wait;
-            echo `date` - "END detect lang";
+            wait &>> ${log};
+            ls -ahld /output/WORKING/system/rsd &>> ${log};
+            ls -ahld /output/WORKING/data &>> ${log};
+            echo `date` - "END detect lang" &>> ${log};
 
         volumeMounts:
           - name: input-efs

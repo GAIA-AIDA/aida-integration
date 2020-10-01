@@ -47,17 +47,22 @@ spec:
           value: "/output/WORKING/mp4"
         - name: log_filename
           value: "/output/WORKING/full-text-log.txt"
+        - name: param_filename
+          value: "/output/WORKING/usc.objdet.M36.param"
         command: ["/bin/bash", "-c"]
         args:
+#            echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" &>> ${param_filename};
          - echo `date` - "** START AIDA Tools **";
            mkdir -p /output/WORKING;
            echo `date` - "** START AIDA Tools **" &>> ${log_filename};
-           ls -ahl ${INPUT_MP4_LDCC} &>> ${log_filename};
            mkdir -p ${OUTPUT_MP4};
-           echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" &> ./M36.param;
-           cat ./M36.param  &>> ${log_filename};
+           echo "input_mp4_ldcc_dir:" "/input/data/mp4" &>> ${param_filename};
+           echo "output_mp4_dir:" "/output/WORKING/mp4" &>> ${param_filename};
+           pwd &>> ${log_filename};
+           ls -ahl /output/WORKING &>> ${log_filename};
+           cat ${param_filename} &>> ${log_filename};
            echo  "extract_mp4.py >>>" &>> ${log_filename};
-           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ./M36.param  &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ${param_filename} &>> ${log_filename};
            ls -ahl ${OUTPUT_MP4}  &>> ${log_filename};
            echo `date` - "END AIDA Tools" &>> ${log_filename};
 
@@ -76,7 +81,7 @@ spec:
 ## See https://github.com/isi-vista/aida-integration/#usc-object-detection
 
       - name: usc-object-detection
-        image: gaiaaida/detection-grounding:0.2
+        image: gaiaaida/detection-grounding:0.3
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -103,13 +108,11 @@ spec:
 # this should only do the USC object detection, not the grounding.
          - echo `date` - "** START USC Object Detection **" &>> ${log_filename};
            mkdir -p /upload/USC_Vision_Data/m18_eval/;
-           ls -ahl /input/docs/  &>> ${log_filename};
-           ls -ahl /input/data/jpg/ &>> ${log_filename};
-           ls -ahl /input/data/video_shot_boundaries/representative_frames/ &>> ${log_filename};
            mkdir -p ${OBJDET_OUTPUT};
            cd /aida/src/;
-           conda activate aida-env && which python &>> ${log_filename};
            /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log_filename};
+           pwd &>> ${log_filename};
+           ls -ahl ./data &>> ${log_filename};
            /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log_filename};
            find /upload/USC_Vision_Data/m18_eval -name '*.*'  &>> ${log_filename};
            RESULTS=/upload/USC_Vision_Data/m18_eval;
