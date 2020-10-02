@@ -184,10 +184,10 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-# Output is located at /upload/USC_Vision_Data/m18_eval/. 
-# There are two folders: one using pascal voc (m18_eval_usc_vision_voc) 
-# and other using oi (m18_eval_usc_vision_oi). 
-# Each contains 4 files; 3 of them are about jpg, png, representative_frames, 
+# Output is located at /upload/USC_Vision_Data/m18_eval/.
+# There are two folders: one using pascal voc (m18_eval_usc_vision_voc)
+# and other using oi (m18_eval_usc_vision_oi).
+# Each contains 4 files; 3 of them are about jpg, png, representative_frames,
 # and the last one just has all of them in one file.
 # this should only do the USC object detection, not the grounding.
          - echo `date` - "** START USC Object Detection **" &>> ${log_filename};
@@ -590,27 +590,27 @@ spec:
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: ltf_txt_path
-          value: "/output/WORKING/data/en/event/'ltf_txt'"
+          value: "/output/WORKING/data/en/event/ltf_txt"
         - name: framenet_path
-          value: "/output/WORKING/data/en/event/'framenet_res'"
+          value: "/output/WORKING/data/en/event/framenet_res"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
         - name: ltf_txt_path_ru
-          value: "/output/WORKING/data/ru/event/'ltf_txt'"
+          value: "/output/WORKING/data/ru/event/ltf_txt"
         - name: framenet_path_ru
-          value: "/output/WORKING/data/ru/event/'framenet_res'"
+          value: "/output/WORKING/data/ru/event/framenet_res"
         #SPANISH
         - name: lang_es
           value: "es"
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: ltf_txt_path_es
-          value: "/output/WORKING/data/es/event/'ltf_txt'"
+          value: "/output/WORKING/data/es/event/ltf_txt"
         - name: framenet_path_es
-          value: "/output/WORKING/data/es/event/'framenet_res'"
+          value: "/output/WORKING/data/es/event/framenet_res"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
@@ -641,19 +641,19 @@ spec:
         env:
         #ENGLISH
         - name: ltf_txt_path
-          value: "/output/WORKING/data/en/event/'ltf_txt'"
+          value: "/output/WORKING/data/en/event/ltf_txt"
         - name: framenet_path
-          value: "/output/WORKING/data/en/event/'framenet_res'"
+          value: "/output/WORKING/data/en/event/framenet_res"
         #RUSSIAN
         - name: ltf_txt_path_ru
-          value: "/output/WORKING/data/ru/event/'ltf_txt'"
+          value: "/output/WORKING/data/ru/event/ltf_txt"
         - name: framenet_path_ru
-          value: "/output/WORKING/data/ru/event/'framenet_res'"
+          value: "/output/WORKING/data/ru/event/framenet_res"
         #SPANISH
         - name: ltf_txt_path_es
-          value: "/output/WORKING/data/es/event/'ltf_txt'"
+          value: "/output/WORKING/data/es/event/ltf_txt"
         - name: framenet_path_es
-          value: "/output/WORKING/data/es/event/'framenet_res'"
+          value: "/output/WORKING/data/es/event/framenet_res"
         #ALL
         - name: thread_num
           value: "3"
@@ -738,10 +738,6 @@ spec:
         #ENGLISH
         - name: lang
           value: "en"
-        - name: ltf_source
-          value: "/output/WORKING/data/en/ltf"
-        - name: rsd_source
-          value: "/output/WORKING/data/en/rsd"
         - name: edl_tab_nam_bio
           value: "/output/WORKING/data/en/merge/mention/english.nam.bio"
         - name: entity_fine_model
@@ -749,10 +745,6 @@ spec:
         #RUSSIAN
         - name: lang_ru
           value: "ru"
-        - name: ltf_source_ru
-          value: "/output/WORKING/data/ru/ltf"
-        - name: rsd_source_ru
-          value: "/output/WORKING/data/ru/rsd"
         - name: edl_tab_nam_bio_ru
           value: "/output/WORKING/data/ru/mention/russian.nam.bio”"
         - name: entity_fine_model_ru
@@ -760,10 +752,6 @@ spec:
         #SPANISH
         - name: lang_es
           value: "es"
-        - name: ltf_source_es
-          value: "/output/WORKING/data/es/ltf"
-        - name: rsd_source_es
-          value: "/output/WORKING/data/es/rsd"
         - name: edl_tab_nam_bio_es
           value: “/output/WORKING/data/es/mention/spanish.nam.bio”
         - name: entity_fine_model_es
@@ -849,7 +837,6 @@ spec:
             python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es} ${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
             wait &>> ${log};
             echo `date` - "END edl linking" &>> ${log};
-          #NOTE: why is there a testdata_? Was this just part of a testing script?
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -861,16 +848,10 @@ spec:
 ## ENGLISH edl-nominal-coreference
 ################################
 
-## 2020=09-21 edl-nominal-coreference entirely rewritten to be:
-# docker run --gpus '"device=1"' --rm -v ${data_root}:${data_root} laituan245/spanbert_entity_coref \
-# -edl_official ${edl_tab_link} -edl_freebase ${edl_tab_link_fb} -l ${ltf_source} -o ${edl_tab_final}
-# ENTRYPOINT: "/opt/conda/envs/aida_coreference/bin/python3.6\" \"aida_coref.py\"]
-# command: ["/opt/conda/envs/aida_coreference/bin/python3.6", "/app/aida_coref.py"
-# TODO: not sure how to set --gpus device=1 or how to mount data_root:data_root
+# TODO: not sure how to set --gpus device=1
       - name: edl-nominal-coreference-en
         image: laituan245/spanbert_entity_coref
-#        workingDir: /app
-# NOTE: Not sure what the workdingDir should be, but needs to run aida_coref.py
+        workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
         - name: data_root
@@ -879,23 +860,22 @@ spec:
           value: "en.linking.tab"
         - name: edl_tab_link_fb
           value: "en.linking.freebase.tab"
+        - name: edl_output_dir
+          value: "/output/WORKING/data/en/edl"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "START edl-nominal-coreference-en" &>> ${log};
             echo "Begin edl-nominal-coreference-en for "${edl_tab_link} &>> ${log};
-            ls -ahl ${data_root} &>> ${log};
-            /opt/conda/envs/aida_coreference/bin/python3.6 /app/aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab &>> ${log};
             echo `date` - "END edl-nominal-coreference-en" &>> ${log};
-
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-# TODO DAN how do we run this on docker using '--gpus device=1', does the line above accomplish this?
 
 ################################
 ## ENGLISH tab2cs
@@ -934,11 +914,11 @@ spec:
         - name: use_nominal_corefer
           value: "1"
         #RUSSIAN
-        - name: udp_dir
+        - name: udp_dir_ru
           value: "/output/WORKING/data/ru/udp"
-        - name: edl_tab_link
+        - name: edl_tab_link_ru
           value: "/output/WORKING/data/ru/edl/ru.linking.tab"
-        - name: edl_tab_final
+        - name: edl_tab_final_ru
           value: "/output/WORKING/data/ru/edl/merged_final.tab"
         #SPANISH
         - name: udp_dir_es
@@ -952,7 +932,6 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "START edl-nominal-conference-ru-es" &>> ${log};
-            python appos_extract.py --udp_dir ${udp_dir} --edl_tab_path ${edl_tab_link} --path_out_coref ${edl_tab_final} &
             python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &
             python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &
             wait &>> ${log};;
