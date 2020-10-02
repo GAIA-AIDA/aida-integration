@@ -1621,33 +1621,37 @@ spec:
           value: "/output/WORKING/data/en/event"
         - name: core_nlp_output_path
           value: "/output/WORKING/data/en/corenlp"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         #RUSSIAN
         #UKRANIAN
+
+# TODO: does framenet_res need single quotes around it?
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START event fine grained";
+          - echo `date` - "** START event fine grained **" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py
             ${lang} ${ltf_source} ${edl_output_dir}/${lang}.linking.freebase.fine.json ${edl_output_dir}/${lang}.linking.freebase.tab ${edl_output_dir}/merged.cs
-            ${event_result_dir}/en.event.cs ${event_result_dir}/events_fine.cs --filler_coarse ${edl_output_dir}/filler_${lang}.cs --entity_finegrain_aida ${edl_output_dir}/merged_all_fine.cs;
-            echo `date` - "** Event fine-grained typing **";
-            echo "** Event rule-based **"
+            ${event_result_dir}/en.event.cs ${event_result_dir}/events_fine.cs --filler_coarse ${edl_output_dir}/filler_${lang}.cs --entity_finegrain_aida ${edl_output_dir}/merged_all_fine.cs &>> ${log};
+            echo `date` - "Event fine-grained typing" &>> ${log};
+            echo "Event rule-based" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py
-            "${event_result_dir}/'framenet_res'" ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs;
-            echo `date` - "Completed new_event_framenet.py";
+            "${event_result_dir}/'framenet_res'" ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log;
+            echo `date` - "Completed new_event_framenet.py" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py
-            ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs;
-            echo `date` - "Completed new_event_dependency.py";
+            ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
+            echo `date` - "Completed new_event_dependency.py" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py
-            --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs;
-            echo `date` - "Combine fine-grained typing and rule-based";
+            --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
+            echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang};
+            ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir}/events_fine_all_clean.cs_tmp ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs ${lang};
-            echo `date` - "Completed rewrite-args";
+            ${event_result_dir}/events_fine_all_clean.cs_tmp ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs ${lang} &>> ${log};
+            echo `date` - "END Completed rewrite-args" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1657,7 +1661,7 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
-## RU\UK - Event (Fine-grained)
+## RU\ES - Event (Fine-grained)
 ################################
       - name: event-fine-ru-es
         image: limanling/uiuc_ie_m36
@@ -1689,36 +1693,36 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: core_nlp_output_path_es
           value: "/output/WORKING/data/es/corenlp"
-        - name: log_filename
+        - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START Event Fine Grained RU ES" &>> ${log_filename};
+          - echo `date` - "** START Event Fine Grained RU ES" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py
             ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab ${edl_output_dir_ru}/merged.cs
-            ${event_result_dir_ru}/en.event.cs ${event_result_dir_ru}/events_fine.cs --filler_coarse ${edl_output_dir_ru}/filler_${lang_ru}.cs --entity_finegrain_aida ${edl_output_dir_ru}/merged_all_fine.cs;
-            echo `date` - "** Event fine-grained typing RU**";
-            echo "** Event rule-based RU**"
+            ${event_result_dir_ru}/en.event.cs ${event_result_dir_ru}/events_fine.cs --filler_coarse ${edl_output_dir_ru}/filler_${lang_ru}.cs --entity_finegrain_aida ${edl_output_dir_ru}/merged_all_fine.cs &>> ${log};
+            echo `date` - " Event fine-grained typing RU" &>> ${log};
+            echo "Event rule-based RU" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir_ru}/events_fine.cs ${ltf_source_ru} ${event_result_dir_ru}/events_fine_all_clean.cs_tmp ${lang_ru};
+            ${event_result_dir_ru}/events_fine.cs ${ltf_source_ru} ${event_result_dir_ru}/events_fine_all_clean.cs_tmp ${lang_ru} &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir_ru}/events_fine_all_clean.cs_tmp ${ltf_source_ru} ${event_result_dir_ru}/events_fine_all_clean.cs ${lang_ru};
-            echo `date` - "Completed rewrite-args RU";
+            ${event_result_dir_ru}/events_fine_all_clean.cs_tmp ${ltf_source_ru} ${event_result_dir_ru}/events_fine_all_clean.cs ${lang_ru} &>> ${log};
+            echo `date` - "Completed rewrite-args RU" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py
             ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json ${edl_output_dir_es}/${lang_es}.linking.freebase.tab ${edl_output_dir_es}/merged.cs
-            ${event_result_dir_es}/en.event.cs ${event_result_dir_es}/events_fine.cs --filler_coarse ${edl_output_dir_es}/filler_${lang_es}.cs --entity_finegrain_aida ${edl_output_dir_es}/merged_all_fine.cs;
-            echo `date` - "** Event fine-grained typing ES**";
-            echo "** Event rule-based ES**"
+            ${event_result_dir_es}/en.event.cs ${event_result_dir_es}/events_fine.cs --filler_coarse ${edl_output_dir_es}/filler_${lang_es}.cs --entity_finegrain_aida ${edl_output_dir_es}/merged_all_fine.cs &>> ${log};
+            echo `date` - "Event fine-grained typing ES" &>> ${log};
+            echo "Event rule-based ES" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir_es}/events_fine.cs ${ltf_source_es} ${event_result_dir_es}/events_fine_all_clean.cs_tmp ${lang_es};
+            ${event_result_dir_es}/events_fine.cs ${ltf_source_es} ${event_result_dir_es}/events_fine_all_clean.cs_tmp ${lang_es} &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py
-            ${event_result_dir_es}/events_fine_all_clean.cs_tmp ${ltf_source_es} ${event_result_dir_es}/events_fine_all_clean.cs ${lang_es};
-            echo `date` - "Completed rewrite-args ES";
+            ${event_result_dir_es}/events_fine_all_clean.cs_tmp ${ltf_source_es} ${event_result_dir_es}/events_fine_all_clean.cs ${lang_es} &>> ${log};
+            echo `date` - "END Completed rewrite-args ES" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1778,16 +1782,16 @@ spec:
           value: "/output/WORKING/data/es/rsd"
         - name: event_result_dir_es
           value: "/output/WORKING/data/es/event"
-        - name: log_filename
+        - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START Event Coreference" &>> ${log_filename};
+          - echo `date` - "** START Event Coreference" &>> ${log};
             /opt/conda/envs/aida_coreference/bin/python3.6 aida_event_coref.py
             -i ${event_result_dir}/${event_fine_all_clean} -c ${event_result_dir}/${event_corefer}
             -t ${event_result_dir}/${event_corefer_confidence} -l ${ltf_source}
-            &>> ${log_filename};
-            echo `date` - "END Event Coreference" &>> ${log_filename};
+            &>> ${log};
+            echo `date` - "END Event Coreference" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1873,16 +1877,16 @@ spec:
           value: "/input/docs/parent_children.tab"
         - name: output_filename_es
           value: "/output/WORKING/data/es/event/events_4tuple.cs"
-        - name: log_filename
+        - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-         - echo `date` - "** START Temporal 4 tuple generation **" &>> ${log_filename};
+         - echo `date` - "** START Temporal 4 tuple generation **" &>> ${log};
            python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename {event_cold_start_filename} --read_cs_event --parent_children_filename {parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename {output_filename} --lang {lang} &
            python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename {event_cold_start_filename_ru} --parent_children_filename {parent_child_tab_path_ru} --output_filename {output_filename_ru} --lang {lang_ru} &
            python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename {event_cold_start_filename_es} --parent_children_filename {parent_child_tab_path_es} --output_filename {output_filename_es} --lang {lang_es} &
-           wait &>> ${log_filename};
-           echo `date` - "END Temporal 4 tuple generation **" &>> ${log_filename};
+           wait &>> ${log};
+           echo `date` - "END Temporal 4 tuple generation **" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1924,14 +1928,16 @@ spec:
           value: "/output/WORKING/data/es/event/events_4tuple.cs"
         - name: event_final_es
           value: "/output/WORKING/data/es/event/events_info.cs"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-         - echo `date` - "** START Event Informative Justification **";
+         - echo `date` - "** START Event Informative Justification **" &>> ${log};
            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source} ${event_corefer_time} ${event_final} --eval m36 &
            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source_ru} ${event_corefer_time_ru} ${event_final_ru} --eval m36 &
            /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py  ${ltf_source_es} ${event_corefer_time_es} ${event_final_es} --eval m36 &
-           wait;
-           echo `date` - "END Event Informative Justification";
+           wait &>> ${log};
+           echo `date` - "END Event Informative Justification" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -2021,6 +2027,8 @@ spec:
           value: "es.linking.freebase.fine.json"
         - name: lorelei_link_private_data_es
           value: "lorelei_private_data.json"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
 
@@ -2034,17 +2042,17 @@ spec:
 #
 # change pipeline merge to use these params:
 #    --cs_fnames ${edl_cs_info_conf} ${edl_cs_color} ${relation_4tuple} ${event_final} \
-          - echo `date` - "** Merging all items **";
+          - echo `date` - "** Merging all items **" &>> ${log};
             /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
-           --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36;
-            echo `date` - "multiple freebase links";
+            --cs_fnames ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/${lang}.color.cs ${relation_result_dir}/${lang}/${lang}.fine_rel.cs ${event_result_dir}/events_info.cs --output_file ${data_root}/${lang}${source}_full.cs --eval m36 &>> ${log};
+            echo `date` - "multiple freebase links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_freebase.py
-            ${edl_output_dir}/${lang}.linking.freebase.tab ${data_root}/${lang}${source}_full.cs ${edl_output_dir}/freebase_private_data.json;
-            echo `date` - "multiple lorelei links";
+            ${edl_output_dir}/${lang}.linking.freebase.tab ${data_root}/${lang}${source}_full.cs ${edl_output_dir}/freebase_private_data.json &>> ${log};
+            echo `date` - "multiple lorelei links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_confidence.py
-            ${edl_output_dir}/${lang}.linking.tab.candidates.json ${data_root}/${lang}${source}_full.cs ${data_root}/${lang}${source}_full_link.cs ${edl_output_dir}/lorelei_private_data.json --eval m36;
-            echo `date` - "** Format converter **";
-            echo `date` - "Start AIF converter";
+            ${edl_output_dir}/${lang}.linking.tab.candidates.json ${data_root}/${lang}${source}_full.cs ${data_root}/${lang}${source}_full_link.cs ${edl_output_dir}/lorelei_private_data.json --eval m36 &>> ${log};
+            echo `date` - "Format converter" &>> ${log};
+            echo `date` - "Start AIF converter" &>> ${log};
             /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py
             --input_cs ${data_root}/${lang}${source}_full_link.cs --ltf_dir ${ltf_source}
             --output_ttl_dir ${data_root}/initial --lang ${lang}${source} --eval m36
@@ -2057,40 +2065,40 @@ spec:
             --freebase_tab ${edl_output_dir}/${edl_tab_freebase_file}
             --fine_grained_entity_type_path ${edl_output_dir}/${edl_json_fine_file}
             --lorelei_link_mapping ${edl_output_dir}/${lorelei_link_private_data}
-            --parent_child_tab_path ${parent_child_tab_path};
+            --parent_child_tab_path ${parent_child_tab_path} &>> ${log};
 
-            echo `date` - "** Merging all items RU **";
+            echo `date` - "Merging all items RU" &>> ${log};
             /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
-            --cs_fnames ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/${lang_ru}.color.cs ${relation_result_dir_ru}/${lang_ru}/${lang_ru}.fine_rel.cs ${event_result_dir_ru}/events_info.cs --output_file ${data_root_ru}/${lang_ru}${source_ru}_full.cs --eval m36;
-            echo `date` - "multiple freebase links";
+            --cs_fnames ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/${lang_ru}.color.cs ${relation_result_dir_ru}/${lang_ru}/${lang_ru}.fine_rel.cs ${event_result_dir_ru}/events_info.cs --output_file ${data_root_ru}/${lang_ru}${source_ru}_full.cs --eval m36 &>> ${log};
+            echo `date` - "multiple freebase links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_freebase.py
-            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab ${data_root_ru}/${lang_ru}${source_ru}_full.cs ${edl_output_dir_ru}/freebase_private_data.json;
-            echo `date` - "multiple lorelei links";
+            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab ${data_root_ru}/${lang_ru}${source_ru}_full.cs ${edl_output_dir_ru}/freebase_private_data.json &>> ${log};
+            echo `date` - "multiple lorelei links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_confidence.py
-            ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${data_root_ru}/${lang_ru}${source_ru}_full.cs ${data_root_ru}/${lang_ru}${source_ru}_full_link.cs ${edl_output_dir_ru}/lorelei_private_data.json;
-            echo `date` - "** Format converter **";
-            echo `date` - "Start AIF converter";
+            ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${data_root_ru}/${lang_ru}${source_ru}_full.cs ${data_root_ru}/${lang_ru}${source_ru}_full_link.cs ${edl_output_dir_ru}/lorelei_private_data.json &>> ${log};
+            echo `date` - "Format converter" &>> ${log};
+            echo `date` - "Start AIF converter" &>> ${log};
             /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py
             --input_cs ${data_root_ru}/${lang_ru}${source_ru}_full_link.cs --ltf_dir ${ltf_source_ru}
             --output_ttl_dir ${data_root_ru}/initial --lang ${lang_ru}${source_ru} --eval m36
-            --evt_coref_score_tab ${event_result_dir_ru}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_ru} --ent_vec_dir ${data_root}/mention;
+            --evt_coref_score_tab ${event_result_dir_ru}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_ru} --ent_vec_dir ${data_root}/mention &>> ${log};
 
-            echo `date` - "** Merging all items ES **";
+            echo `date` - "Merging all items ES" &>> ${log};
             /opt/conda/envs/py36/bin/python /postprocessing/pipeline_merge.py
-            --cs_fnames ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/${lang_es}.color.cs ${relation_result_dir_es}/${lang_es}/${lang_es}.fine_rel.cs ${event_result_dir_es}/events_info.cs --output_file ${data_root_es}/${lang_es}${source_es}_full.cs --eval m36;
-            echo `date` - "multiple freebase links";
+            --cs_fnames ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/${lang_es}.color.cs ${relation_result_dir_es}/${lang_es}/${lang_es}.fine_rel.cs ${event_result_dir_es}/events_info.cs --output_file ${data_root_es}/${lang_es}${source_es}_full.cs --eval m36 &>> ${log};
+            echo `date` - "multiple freebase links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_freebase.py
-            ${edl_output_dir_es}/${lang_es}.linking.freebase.tab ${data_root_es}/${lang_es}${source_es}_full.cs ${edl_output_dir_es}/freebase_private_data.json;
-            echo `date` - "multiple lorelei links";
+            ${edl_output_dir_es}/${lang_es}.linking.freebase.tab ${data_root_es}/${lang_es}${source_es}_full.cs ${edl_output_dir_es}/freebase_private_data.json &>> ${log};
+            echo `date` - "multiple lorelei links" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/postprocessing_link_confidence.py
-            ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${data_root_es}/${lang_es}${source_es}_full.cs ${data_root_es}/${lang_es}${source_es}_full_link.cs ${edl_output_dir_es}/lorelei_private_data.json;
-            echo `date` - "** Format converter **";
-            echo `date` - "** START AIF converter";
+            ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${data_root_es}/${lang_es}${source_es}_full.cs ${data_root_es}/${lang_es}${source_es}_full_link.cs ${edl_output_dir_es}/lorelei_private_data.json &>> ${log};
+            echo `date` - "Format converter" &>> ${log};
+            echo `date` - "START AIF converter" &>> ${log};
             /opt/conda/envs/py36/bin/python /postprocessing/aif_converter.py
             --input_cs ${data_root_es}/${lang_es}${source_es}_full_link.cs --ltf_dir ${ltf_source_es}
             --output_ttl_dir ${data_root_es}/initial --lang ${lang_es}${source_es} --eval m36
-            --evt_coref_score_tab ${event_result_dir_es}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_es};
-            echo `date` - "END AIF converter";
+            --evt_coref_score_tab ${event_result_dir_es}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_es} &>> ${log};
+            echo `date` - "END AIF converter" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -2203,38 +2211,40 @@ spec:
           value: "es_nam_5type.mention.hidden.txt"
         - name: edl_vec_file2_es
           value: "es_nam_wv.mention.hidden.txt"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
           #NOTE: KeyError here
-          - echo `date` - "START append-private-information";
+          - echo `date` - "** START append-private-information **" &>> ${log};
 
             /opt/conda/envs/py36/bin/python postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang}${source} --input_private_folder ${data_root}/initial --output_folder ${data_root}/final
-            --parent_child_tab_path ${parent_child_tab_path} --parent_child_mapping_sorted ${sorted};
+            --parent_child_tab_path ${parent_child_tab_path} --parent_child_mapping_sorted ${sorted} &>> ${log};
 
-            chmod -R 777 ${data_root}/final ${data_root}/initial;
+            chmod -R 777 ${data_root}/final ${data_root}/initial &>> ${log};
 
-            echo `date` - "END append-private-information";
-            echo "Final result in Cold Start Format is in ${data_root}/${lang}${source}_full_link.cs";
-            echo "Final result in RDF Format is in ${data_root}/final";
+            echo `date` - "END append-private-information" &>> ${log};
+            echo "Final result in Cold Start Format is in ${data_root}/${lang}${source}_full_link.cs" &>> ${log};
+            echo "Final result in RDF Format is in ${data_root}/final" &>> ${log};
 
-            echo `date` - "START RU append-private-information";
-            /opt/conda/envs/aida_entity/bin/python /postprocessing/postprocessing_append_private_data_m36.py;
+            echo `date` - "START RU append-private-information" &>> ${log};
+            /opt/conda/envs/aida_entity/bin/python /postprocessing/postprocessing_append_private_data_m36.py &>> ${log};
 
             /opt/conda/envs/py36/bin/python /postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang_ru}${source_ru}
             --input_private_folder ${data_root_ru}/initial_private_data
             --output_folder ${data_root_ru}/final
             --parent_child_tab_path ${parent_child_tab_path_ru}
-            --parent_child_mapping_sorted ${sorted_ru};
+            --parent_child_mapping_sorted ${sorted_ru} &>> ${log};
 
             chmod -R 777 ${data_root_ru}/final ${data_root_ru}/initial_private_data;
 
-            echo `date` - "END RU append-private-information";
-            echo "Final RU result in Cold Start Format is in ${data_root_ru}/${lang_ru}${source_ru}_full_link.cs";
-            echo "Final RU result in RDF Format is in ${data_root_ru}/final";
+            echo `date` - "END RU append-private-information" &>> ${log};
+            echo "Final RU result in Cold Start Format is in ${data_root_ru}/${lang_ru}${source_ru}_full_link.cs" &>> ${log};
+            echo "Final RU result in RDF Format is in ${data_root_ru}/final" &>> ${log};
 
-            echo `date` - "START ES append-private-information";
+            echo `date` - "START ES append-private-information" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /postprocessing/postprocessing_rename_turtle.py
             --language_id ${lang_es}${source_es}
@@ -2245,12 +2255,12 @@ spec:
 
             chmod -R 777 ${data_root_es}/final ${data_root_es}/initial_private_data;
 
-            echo `date` - "END ES append-private-information";
-            echo "Final ES result in Cold Start Format is in ${data_root_es}/${lang_es}${source_es}_full_link.cs";
-            echo "Final ES result in RDF Format is in ${data_root_es}/final";
-            find ${data_root_es} -name 'merged.cs';
-            find ${data_root_es} -name 'merged_final.tab';
-            find ${data_root_es} -name 'events_tme.cs';
+            echo `date` - "END ES append-private-information" &>> ${log};
+            echo "Final ES result in Cold Start Format is in ${data_root_es}/${lang_es}${source_es}_full_link.cs" &>> ${log};
+            echo "Final ES result in RDF Format is in ${data_root_es}/final" &>> ${log};
+            find ${data_root_es} -name 'merged.cs' &>> ${log};
+            find ${data_root_es} -name 'merged_final.tab' &>> ${log};
+            find ${data_root_es} -name 'events_tme.cs' &>> ${log};
 #TODO: copy files for sentiment to /output/WORKING/uiuc_ttl_results/
 #TODO: copy files needed by CU, text mention results in /output/WORKING/uiuc_ttl_results
         volumeMounts:
@@ -2277,30 +2287,31 @@ spec:
           value: "0"
         - name: FACE_OUTPUT
           value: "/output/WORKING/cu-face-building/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
 # needs UIUC text mention results in /output/WORKING/uiuc_ttl_results
 # needs CU objdet results in /output/WORKING/cu_objdet_results
         args:
-          - echo `date` - "START CU Face, Flag, Landmark Detection";
-           echo "INPUT "${INPUT};
-           echo "OUTPUT "${OUTPUT};
-           working_path=${OUTPUT}/WORKING;
-           txt_mention_ttl_path = working_path + 'uiuc_ttl_results';
-           det_results_path_graph = working_path + 'cu_objdet_results/aida_output_34.pkl';
-           det_results_path_img = working_path + 'cu_objdet_results/det_results_merged_34a.pkl';
-           det_results_path_kfrm = working_path + 'cu_objdet_results/det_results_merged_34b.pkl';
-           echo "FACE_OUTPUT "${FACE_OUTPUT};
-           ls -ahl /input/docs/;
-           ls -ahl /input/data/jpg/;
-           ls -ahl /input/data/jpg/jpg/;
-           ls -ahl /input/data/video_shot_boundaries/representative_frames/;
-           mkdir -p ${FACE_OUTPUT};
-           /bin/bash -c ./full_script.sh/;
-           ls -ahl /output/;
-           ls -ahl ${FACE_OUTPUT};
-           find . -name '*cu_object*'
-           out_ttl=working_path + 'cu_object_FFT_ttl/';
-           echo `date` - "END CU Face, Flag, Landmark Detection";
+          - echo `date` - "** START CU Face, Flag, Landmark Detection **" &>> ${log};
+            echo "INPUT "${INPUT};
+            echo "OUTPUT "${OUTPUT};
+            working_path=${OUTPUT}/WORKING;
+            txt_mention_ttl_path = working_path + 'uiuc_ttl_results';
+            det_results_path_graph = working_path + 'cu_objdet_results/aida_output_34.pkl';
+            det_results_path_img = working_path + 'cu_objdet_results/det_results_merged_34a.pkl';
+            det_results_path_kfrm = working_path + 'cu_objdet_results/det_results_merged_34b.pkl';
+            echo "FACE_OUTPUT "${FACE_OUTPUT};
+            ls -ahl /input/docs/;
+            ls -ahl /input/data/jpg/;
+            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
+            mkdir -p ${FACE_OUTPUT};
+            /bin/bash -c ./full_script.sh/ &>> ${log};
+            ls -ahl /output/;
+            ls -ahl ${FACE_OUTPUT};
+            find . -name '*cu_object*' &>> ${log};
+            out_ttl=working_path + 'cu_object_FFT_ttl/';
+            echo `date` - "END CU Face, Flag, Landmark Detection" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -2325,17 +2336,20 @@ spec:
           value: "0"
         - name: VISGRD_OUTPUT
           value: "/output/WORKING/cu-visual-grounding/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START CU Visual Grounding";
+#TODO: python
+          - echo `date` - "** START CU Visual Grounding**" &>> ${log};
             mkdir -p ${VISGRD_OUTPUT};
-            python ./smoke_test.py;
-            python ./Feature_Extraction.py;
-            python ./Visual_Grounding_mp.py;
-            source activate aida-env && which python;
+            python ./smoke_test.py &>> ${log};
+            python ./Feature_Extraction.py &>> ${log};
+            python ./Visual_Grounding_mp.py &>> ${log};
+            source activate aida-env && which python &>> ${log};
             ls -ahl ${VISGRD_OUTPUT};
             find . -name '*.pickle';
-            echo `date` - "END CU Visual Grounding";
+            echo `date` - "END CU Visual Grounding" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -2362,6 +2376,8 @@ spec:
           value: "0"
         - name: GRD_OUTPUT
           value: "/output/WORKING/usc-grounding/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
 # REQUIRES:
@@ -2369,31 +2385,31 @@ spec:
 # id2mentions_dict_E1.pickle
 # parent_children.sorted.tab
 # TODO: USC object detection already ran, so what parts can we skip here:
-         - echo `date` - "** START USC Object Detection and Grounding **";
+         - echo `date` - "** START USC Object Detection and Grounding **" &>> ${log};
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
            echo "GRD_OUTPUT "${GRD_OUTPUT};
            ls -ahl /input/docs/;
            ls -ahl /input/data/jpg/;
            mkdir -p ${GRD_OUTPUT};
-           find . -name '*.pickle';
+           find /output/WORKING -name '*.pickle' &>> ${log};
            cd /aida/src/;
-           python ./code/smoke_test.py;
-           python ./code/aida_ds_creator.py;
+           python ./code/smoke_test.py &>> ${log};
+           python ./code/aida_ds_creator.py &>> ${log};
            cd ./open_images_pfdet/;
            python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1"
              --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted
              --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True
-             --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True;
+             --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log};
            cd ../;
-           python ./code/mrcnn_2_aida.py;
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=False;
-           python ./code/ground_naive.py;
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=True;
-           find . -name 'uscvision_grounding_output_cu_format_E1.pickle;
+           python ./code/mrcnn_2_aida.py &>> ${log};
+           python ./code/columbia_idmentions_2_phrase_file.py --fin1=False &>> ${log};
+           python ./code/ground_naive.py &>> ${log};
+           python ./code/columbia_idmentions_2_phrase_file.py --fin1=True &>> ${log};
+           find . -name 'uscvision_grounding_output_cu_format_E1.pickle &>> ${log};
            RESULTS=./uscvision_grounding_output_cu_format_E1.pickle;
            cp ${RESULTS} ${GRD_OUTPUT};
-           echo `date` - "END USC Object Detection and Grounding";
+           echo `date` - "END USC Object Detection and Grounding" &>> ${log};
 
 # RESULTS:  uscvision_grounding_output_cu_format_E1.pickle
 # Do we need these copied too?
@@ -2447,20 +2463,21 @@ spec:
           value: "/output/WORKING/columbia_vision_shared/"
         - name: MERGE_OUTPUT
           value: "/output/WORKING/columbia_vision_merged/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START CU Graph Mergingg";
+          - echo `date` - "** START CU Graph Merging **" &>> ${log};
             ls -ahl ${CU_VISION_SHARED};
             mkdir -p ${MERGE_OUTPUT};
-            python ./smoke_test.py;
-            python ./Graph_Merging.py;
-            source activate aida-env && which python;
+            python ./smoke_test.py &>> ${log};
+            python ./Graph_Merging.py &>> ${log};
             RESULTS=./cu_graph_merging_ttl/;
-            ls -ahl ${RESULTS};
+            ls -ahl ${RESULTS} &>> ${log};
             cp -r ${RESULTS} ${MERGE_OUTPUT};
             ls -ahl ${MERGE_OUTPUT};
-            find . -name 'cu_graph_merging_ttl';
-            echo `date` - "END CU Graph Merging";
+            find . -name 'cu_graph_merging_ttl' &>> ${log};
+            echo `date` - "END CU Graph Merging" &>> ${log};
 # CU graph merging result path
 #merged_graph_path = working_path + 'cu_graph_merging_ttl/' + version_folder + 'merged_ttl_'+ p_f_run + '/'
         volumeMounts:
@@ -2489,15 +2506,17 @@ spec:
           value: "/output/WORKING/uiuc_ttl_results/"
         - name: SENTIMENT_OUTPUT
           value: "/output/WORKING/columbia_sentiment/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START CU Sentiment";
+          - echo `date` - "** START CU Sentiment **" &>> ${log};
             ls -ahl ${UIUC_RESULTS_SHARED};
             mkdir -p ${SENTIMENT_OUTPUT};
             cd /sentiment/src/full-system/;
-            . ./full_script.sh /sentiment/src;
-            ls -ahl ${SENTIMENT_OUTPUT};
-            echo `date` - "END CU Sentiment";
+            . ./full_script.sh /sentiment/src &>> ${log};
+            ls -ahl ${SENTIMENT_OUTPUT} &>> ${log};
+            echo `date` - "END CU Sentiment" &>> ${log};
 # output should include en.multi_sent.sponsor_assignblame.cs
         volumeMounts:
           - name: input-efs
@@ -2532,14 +2551,17 @@ spec:
       - name: merging-results
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
+        env:
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Merging Results";
+          - echo `date` - "** START Merging Results **" &>> ${log};
             /opt/conda/envs/py36/bin/python /postprocessing/postprocessing_combine_turtle_from_all_sources.py
             --root_folder /output/WORKING/data
             --final_dir_name final
-            --output_folder /output/INTER-TA;
-            echo `date` - "END Merging Results";
+            --output_folder /output/INTER-TA &>> ${log};
+            echo `date` - "END Merging Results" &>> ${log};
             #sleep 8h
             #sleep is used to allow me to get into the container with: kubectl exec -it gaia-ta1-pipeline-xxxxx -c merging-results
         volumeMounts:
