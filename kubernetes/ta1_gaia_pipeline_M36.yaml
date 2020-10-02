@@ -685,7 +685,7 @@ spec:
 
       - name: oneie
         image: limteng/oneie_aida_m36
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
 # TODO DAN how do we run this on docker using '--gpus device=1'
         workingDir: /oneie
         env:
