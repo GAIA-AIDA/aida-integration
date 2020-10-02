@@ -226,8 +226,8 @@ spec:
            mkdir -p /output/WORKING/system/aida_edl;
            mkdir -p /output/WORKING/system/rsd;
            mkdir -p /output/WORKING/data;
-           wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl &>> ${log};
-           tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data &>> ${log};
+           wget -nc http://159.89.180.81/demo/resources/edl_data.tar.gz -P /output/WORKING/system/aida_edl;
+           tar zxvf /output/WORKING/system/aida_edl/edl_data.tar.gz -C /output/WORKING/data;
            perl /input/tools/ltf2txt/ltf2rsd.perl -o /output/WORKING/system/rsd /input/data/ltf &>> ${log};
            echo `date` - "END setup edl rsd" &>> ${log};
 
@@ -661,7 +661,7 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Run Semafor" &>> ${log};
+          - echo `date` - "** START Run Semafor **" &>> ${log};
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_ru} ${framenet_path_ru} ${thread_num} &
             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_es} ${framenet_path_es} ${thread_num} &
@@ -714,7 +714,8 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START OneIE" &>> ${log};
+# Logged dates are not in UTC
+          - echo `date` - "** START OneIE **" &>> ${log};
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source} -o ${data_root} -l {lang} --output_hidden &
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_ru} -o ${data_root_ru} -l {lang_ru} --output_hidden &
             /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_es} -o ${data_root_es} -l {lang_es} --output_hidden &
@@ -760,7 +761,7 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl entity extraction" &>> ${log};
+          - echo `date` - "** START edl entity extraction **" &>> ${log};
             sed -i 's/0.0.0.0/aida-entity/' /entity/aida_edl/edl.py;
             /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang} ${edl_tab_nam_bio} ${entity_fine_model} &
             /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_ru} ${edl_tab_nam_bio_ru} ${entity_fine_model_ru} &
@@ -826,7 +827,7 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           # gonna symlink it here to avoid new volumes
-          - echo `date` - "START edl linking" &>> ${log};
+          - echo `date` - "** START edl linking **" &>> ${log};
             ln -s /output/WORKING/data/edl_data /data;
             ls -ahl /output/WORKING/data/ &>> ${log};
             ls -ahl /output/WORKING/data/edl_data &>> ${log};
@@ -866,7 +867,7 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl-nominal-coreference-en" &>> ${log};
+          - echo `date` - "** START edl-nominal-coreference-en **" &>> ${log};
             echo "Begin edl-nominal-coreference-en for "${edl_tab_link} &>> ${log};
             /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir}/${edl_tab_link} -edl_freebase ${edl_output_dir}/${edl_tab_link_fb} -l ${data_root}/ltf -o ${edl_output_dir}/merged_final.tab &>> ${log};
             echo `date` - "END edl-nominal-coreference-en" &>> ${log};
@@ -891,7 +892,7 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START tab2cs" &>> ${log};
+          - echo `date` - "** START tab2cs **" &>> ${log};
             ls -ahl ${edl_output_dir};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL' &>> ${log};
             ls -ahl ${edl_output_dir} &>> ${log};
@@ -931,11 +932,11 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START edl-nominal-conference-ru-es" &>> ${log};
+          - echo `date` - "** START edl-nominal-conference-ru-es **" &>> ${log};
             python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &
             python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &
-            wait &>> ${log};;
-            echo `date` - "END edl-nominal-conference-ru-es" &>> ${log};;
+            wait &>> ${log};
+            echo `date` - "END edl-nominal-conference-ru-es" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -961,15 +962,16 @@ spec:
         #SPANISH
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
-
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START tabcs";
+          - echo `date` - "** START tabcs **" &>> ${log};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL' &
             /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir_ru}/merged_final.tab ${edl_output_dir_ru}/merged.cs 'EDL' &
             /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir_es}/merged_final.tab ${edl_output_dir_es}/merged.cs 'EDL' &
-            wait;
-            echo `date` - "END tabcs";
+            wait &>> ${log};
+            echo `date` - "END tabcs" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -988,7 +990,6 @@ spec:
 #     ${edl_cs_oneie} ${relation_cs_oneie} ${event_coarse_oneie} ${edl_cs_coarse} \
 #     ${relation_cs_coarse} ${event_coarse_without_time}
 # # for all three languages
-
       - name: rewrite-relation-event-oneie
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
@@ -1002,14 +1003,16 @@ spec:
         #SPANISH
         - name: data_root_es
           value: "/output/WORKING/data/es"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START rewrite relation event OneIE";
+          - echo `date` - "** START rewrite relation event OneIE **" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root}/merge/cs/entity.cs ${data_root}/merge/cs/relation.cs ${data_root}/merge/cs/event.cs ${data_root}/edl/merged.cs ${data_root}/relation/en.rel.cs ${data_root}/event/event_rewrite.cs &
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/cs/entity.cs ${data_root_es}/cs/relation.cs ${data_root_es}/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/cs/entity.cs ${data_root_ru}/cs/relation.cs ${data_root_ru}/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
-            wait;
-            echo `date` - "END rewrite relation event OneIE";
+            wait &>> ${log};
+            echo `date` - "END rewrite relation event OneIE" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1072,20 +1075,19 @@ spec:
           value: "/output/WORKING/data/es/relation/new_relation_es.cs"
         - name: filler_coarse_es
           value: "/output/WORKING/data/es/edl/filler_es.cs"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START filler extraction and new relation";
+          - echo `date` - "** START filler extraction and new relation **" &>> ${log};
             python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path} --ltf_dir ${ltf_source} --edl_path ${edl_output_dir}/merged.cs --text_dir ${rsd_source}
             --path_relation ${new_relation_coarse} --path_filler ${filler_coarse} --lang ${lang} &
-
             python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_ru} --ltf_dir ${ltf_source_ru} --edl_path ${edl_output_dir_ru}/merged.cs --text_dir ${rsd_source_ru}
             --path_relation ${new_relation_coarse_ru} --path_filler ${filler_coarse_ru} --lang ${lang_ru} &
-
             python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_es} --ltf_dir ${ltf_source_es} --edl_path ${edl_output_dir_es}/merged.cs --text_dir ${rsd_source_es}
             --path_relation ${new_relation_coarse_es} --path_filler ${filler_coarse_es} --lang ${lang_es} &
-
-            wait;
-            echo `date` - "END filler extraction and new relations";
+            wait &>> ${log};
+            echo `date` - "END filler extraction and new relation" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1128,9 +1130,11 @@ spec:
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
           value: "/output/WORKING/data/es/rsd"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START fine grained entity typing";
+          - echo `date` - "** START fine grained entity typing **" &>> ${log};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/fine_grained_entity.py ${lang} ${edl_output_dir}/${lang}.linking.freebase.fine.json ${edl_output_dir}/${lang}.linking.freebase.tab
             ${edl_output_dir}/merged_fine.tsv ${edl_output_dir}/${lang}.linking.geo.json ${edl_output_dir}/merged.cs ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs
             --filler_coarse ${edl_output_dir}/filler_${lang}.cs --ground_truth_tab_dir ${edl_output_dir}/ldc_anno_matched --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --eval m36 &
@@ -1143,8 +1147,8 @@ spec:
             ${edl_output_dir_es}/merged_fine.tsv ${edl_output_dir_es}/${lang_es}.linking.geo.json ${edl_output_dir_es}/merged.cs ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs
             --filler_coarse ${edl_output_dir_es}/filler_${lang_es}.cs --ground_truth_tab_dir ${edl_output_dir_es}/ldc_anno_matched --ltf_dir ${ltf_source_es} --rsd_dir ${rsd_source_es} --eval m36 &
 
-            wait;
-            echo `date` - "Completed fine_grained_entity.py";
+            wait &>> ${log};
+            echo `date` - "Completed fine_grained_entity.py" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir}/${lang}.linking.col.tab
             --en_fill_cs_fname ${edl_output_dir}/filler_${lang}.cs --en_combo_outfname ${edl_output_dir}/filler_${lang}_all.cs --en_color_outfname ${edl_output_dir}/${lang}.color.cs &
@@ -1155,8 +1159,8 @@ spec:
             /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_es}/${lang_es}.linking.col.tab
             --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_es}.cs --en_combo_outfname ${edl_output_dir_es}/filler_${lang_es}_all.cs --en_color_outfname ${edl_output_dir_es}/${lang_es}.color.cs &
 
-            wait;
-            echo `date` - "Completed color_fillers.py";
+            wait &>> ${log};
+            echo `date` - "END Completed color_fillers.py" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1274,23 +1278,27 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START relation extraction fine (Part 1)";
+          - echo `date` - "** START relation extraction fine (Part 1) **" &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
             --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs
             ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json
-            ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained;
+            ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained &>> ${log};
 
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py
             --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${relation_result_dir_ru}/new_relation_${lang_ru}.cs
             ${event_result_dir_ru}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json
-            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained;
+            ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained &>> ${log};
 
             /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py
             --lang_id ${lang_es} --ltf_dir ${ltf_source_es} --rsd_dir ${rsd_source_es} --cs_fnames ${edl_output_dir_es}/merged.cs ${edl_output_dir_es}/filler_${lang_es}_all.cs ${relation_result_dir_es}/${lang_es}.rel.cs ${relation_result_dir_es}/new_relation_${lang_es}.cs
             ${event_result_dir_es}/event_rewrite.cs  --fine_ent_type_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json
-            --outdir ${relation_result_dir_es} --fine_grained;
+            --outdir ${relation_result_dir_es} --fine_grained &>> ${log};
+
+            echo `date` - "END relation extraction fine (Part 1)" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -1324,12 +1332,15 @@ spec:
           value: "es"
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START aida_event_time_pipeline";
-            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir}/${lang}/${lang}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs;
-            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}_rel_4tuple.cs;
-            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_es}/${lang_es}/${lang_es}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_es}/${lang_es}/${lang_es}_rel_4tuple.cs;
+          - echo `date` - "** START aida_event_time_pipeline **" &>> ${log};
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir}/${lang}/${lang}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir}/${lang}/${lang}_rel_4tuple.cs &>> ${log};
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_ru}/${lang_ru}/${lang_ru}_rel_4tuple.cs &>> ${log};
+            python aida_event_time_pipeline.py --relation_cold_start_filename ${relation_result_dir_es}/${lang_es}/${lang_es}.fine_rel.cs --relation --parent_children_filename ${parent_child_tab_path} --output_filename ${relation_result_dir_es}/${lang_es}/${lang_es}_rel_4tuple.cs &>> ${log};
+            echo `date` - "END aida_event_time_pipeline" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1340,7 +1351,6 @@ spec:
 ################################
 ## Relation Extraction (fine) part 2
 ################################
-
       - name: relation-extraction-fine-part2
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
@@ -1390,27 +1400,29 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START relation extraction fine (Part 2)";
+          - echo `date` - "** START relation extraction fine (Part 2) **" &>> ${log};
 
-            echo `date` - "english";
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs;
-            echo `date` - "add protester";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/event_rewrite.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs;
+            echo `date` - "english" &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs &>> ${log};
+            echo `date` - "add protester" &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/event_rewrite.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs &>> ${log};
 
-            echo `date` - "russian";
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs;
-            echo `date` - "add protester RU";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/event_rewrite.css ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs;
-            echo `date` - "** Informative Justification ** RU";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
+            echo `date` - "russian" &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs &>> ${log};
+            echo `date` - "add protester RU" &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/event_rewrite.css ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs &>> ${log};
+            echo `date` - "** Informative Justification ** RU" &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
 
-            echo `date` - "spanish";
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs --output_file ${edl_output_dir_es}/merged_all_fine.cs;
-            echo `date` - "add protester ES";
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_es}/event_rewrite.css ${edl_output_dir_es}/merged_all_fine.cs ${edl_output_dir_es}/merged_all_fine_protester.cs;
-
+            echo `date` - "spanish" &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs --output_file ${edl_output_dir_es}/merged_all_fine.cs &>> ${log};
+            echo `date` - "add protester ES" &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_es}/event_rewrite.css ${edl_output_dir_es}/merged_all_fine.cs ${edl_output_dir_es}/merged_all_fine_protester.cs &>> ${log};
+            echo `date` - "END relation extraction fine (Part 2)" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1421,7 +1433,6 @@ spec:
 ################################
 ## Informative Justification
 ################################
-
       - name: informative-justification
         image: panx27/aida20_mention
         imagePullPolicy: IfNotPresent
@@ -1471,14 +1482,17 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START Informative Justification";
-            python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp;
-            python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs;
+          - echo `date` - "** START Informative Justification **" &>> ${log};
+            python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp &>> ${log};
+            python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs &>> ${log};
 
-            python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs;
-            python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs;
+            python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
+            python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs &>> ${log};
+            echo `date` - "END Informative Justification" &>> ${log};
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1489,7 +1503,6 @@ spec:
 ################################
 ## Relation Extraction (fine) part 3
 ################################
-
       - name: relation-extraction-fine-part3
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
@@ -1557,24 +1570,26 @@ spec:
           value: "es.nom.tagged.tab"
         - name: edl_tab_pro_es
           value: "es.pro.tagged.tab"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "START relation extraction fine (Part 3)";
+          - echo `date` - "** START relation extraction fine (Part 3) **" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom}
             ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs
-            ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt;
-            echo `date` - "Completed rewrite_mention_confidence.py";
+            ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt &>> ${log};
+            echo `date` - "Completed rewrite_mention_confidence.py" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru}
             ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs
-            ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt;
-            echo `date` - "Completed rewrite_mention_confidence.py RU";
+            ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt &>> ${log};
+            echo `date` - "Completed rewrite_mention_confidence.py RU" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es}${source_es} ${edl_output_dir_es}/${edl_tab_nam_es} ${edl_output_dir_es}/${edl_tab_nom_es}
             ${edl_output_dir_es}/${edl_tab_pro_ru} ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs
-            ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt;
-            echo `date` - "Completed rewrite_mention_confidence.py ES";
+            ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt &>> ${log};
+            echo `date` - "END Completed rewrite_mention_confidence.py ES" &>> ${log};
 
         volumeMounts:
           - name: input-efs
