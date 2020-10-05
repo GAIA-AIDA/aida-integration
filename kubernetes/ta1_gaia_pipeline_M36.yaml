@@ -30,6 +30,9 @@ spec:
           # path: "C:/some/local/output"
 
       initContainers:
+###############################
+# Mongo DB Imports
+###############################
       - name: gaia-mongodb-pod
         image: panx27/edl
         env:
@@ -1669,10 +1672,6 @@ spec:
           value: "/output/WORKING/data/en/corenlp"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
-        #RUSSIAN
-        #UKRANIAN
-
-# TODO: does framenet_res need single quotes around it?
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START event fine grained **" &>> ${log};
@@ -1683,7 +1682,7 @@ spec:
             echo "Event rule-based" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py
-            "${event_result_dir}/'framenet_res'" ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log;
+            ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log;
             echo `date` - "Completed new_event_framenet.py" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py
             ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
@@ -1780,21 +1779,21 @@ spec:
 ################################
 ## Event coreference
 ################################
-
 ## NOTE: Event coreference completely changed 2020-09-21
 # docker run --rm -v ${data_root}:${data_root} --gpus '"device=1"' laituan245/spanbert_coref \
 # -i ${event_fine_all_clean} -c ${event_corefer} -t ${event_corefer_confidence} -l ${ltf_source}
 #             "Entrypoint": [
 #                "/opt/conda/envs/aida_coreference/bin/python3.6",
 #                "aida_event_coref.py"
-# TODO: not sure how to:  -v ${data_root}:${data_root} --gpus '"device=1"'
 # event_result_dir=${data_root}/event
 # event_fine_all_clean=${event_result_dir}/events_fine_all_clean.cs
 # event_corefer=${event_result_dir}/events_corefer.cs
 # event_corefer_confidence=${event_result_dir}/events_corefer_confidence.tab
-
       - name: event-coreference
         image: laituan245/spanbert_coref
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1884,8 +1883,10 @@ spec:
 #     --lang ${lang}
       - name: temporal-4-tuple
         image: wenhycs/uiuc_event_time
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
-# TODO DAN how do we run this on docker using '--gpus device=1'
         workingDir: /EventTimeArg
         env:
         #ENGLISH
@@ -1996,6 +1997,9 @@ spec:
 ################################
       - name: final-merge
         image: limanling/uiuc_ie_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
