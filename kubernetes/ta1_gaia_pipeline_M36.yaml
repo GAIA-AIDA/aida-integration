@@ -685,8 +685,10 @@ spec:
 
       - name: oneie
         image: limteng/oneie_aida_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: Always
-# TODO DAN how do we run this on docker using '--gpus device=1'
         workingDir: /oneie
         env:
         #ENGLISH
@@ -716,9 +718,9 @@ spec:
         args:
 # Logged dates are not in UTC
           - echo `date` - "** START OneIE **" &>> ${log};
-            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source} -o ${data_root} -l {lang} --output_hidden &
-            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_ru} -o ${data_root_ru} -l {lang_ru} --output_hidden &
-            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_es} -o ${data_root_es} -l {lang_es} --output_hidden &
+            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source} -o ${data_root} -l ${lang} --output_hidden  &>> ${log} &
+            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_ru} -o ${data_root_ru} -l ${lang_ru} --output_hidden  &>> ${log} &
+            /opt/conda/bin/python /oneie/predict.py -i ${ltf_source_es} -o ${data_root_es} -l ${lang_es} --output_hidden  &>> ${log} &
             wait &>> ${log};
             echo `date` - "END OneIE" &>> ${log};
         volumeMounts:
@@ -733,28 +735,30 @@ spec:
 ################################
       - name: edl-entity-extraction
         image: limanling/uiuc_ie_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
-# TODO DAN how do we run this on docker using '--gpus device=1'
         env:
         #ENGLISH
         - name: lang
           value: "en"
         - name: edl_tab_nam_bio
-          value: "/output/WORKING/data/en/merge/mention/english.nam.bio"
+          value: "/output/WORKING/data/en/merge/mention/en.nam.bio"
         - name: entity_fine_model
           value: "/output/WORKING/data/en/edl/merged_fine.tsv"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
         - name: edl_tab_nam_bio_ru
-          value: "/output/WORKING/data/ru/mention/russian.nam.bio”"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.bio"
         - name: entity_fine_model_ru
           value: "/output/WORKING/data/ru/edl/merged_fine.tsv"
         #SPANISH
         - name: lang_es
           value: "es"
         - name: edl_tab_nam_bio_es
-          value: “/output/WORKING/data/es/mention/spanish.nam.bio”
+          value: "/output/WORKING/data/es/mention/es.nam.bio"
         - name: entity_fine_model_es
           value: "/output/WORKING/data/es/edl/merged_fine.tsv"
         - name: log
@@ -763,9 +767,9 @@ spec:
         args:
           - echo `date` - "** START edl entity extraction **" &>> ${log};
             sed -i 's/0.0.0.0/aida-entity/' /entity/aida_edl/edl.py;
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang} ${edl_tab_nam_bio} ${entity_fine_model} &
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_ru} ${edl_tab_nam_bio_ru} ${entity_fine_model_ru} &
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_es} ${edl_tab_nam_bio_es} ${entity_fine_model_es} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang} ${edl_tab_nam_bio} ${entity_fine_model} &>> ${log} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_ru} ${edl_tab_nam_bio_ru} ${entity_fine_model_ru} &>> ${log} &
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/typing.py ${lang_es} ${edl_tab_nam_bio_es} ${entity_fine_model_es} &>> ${log} &
             wait &>> ${log};
             echo `date` - "END edl entity extraction" &>> ${log};
             #modify /entity/aida_edl/edl.py - line 13 - url = 'http://0.0.0.0:5500/tagging' -> url = 'http://aida-entity:5500/tagging'
@@ -789,11 +793,11 @@ spec:
         - name: source
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename
-          value: "/output/WORKING/data/en/merge/mention/en.nam.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nam.tab"
         - name: edl_tab_nom_filename
-          value: "/output/WORKING/data/en/merge/mention/en.nom.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nom.tab"
         - name: edl_tab_pro_filename
-          value: "/output/WORKING/data/en/merge/mention/en.pro.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.pro.tab"
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         #RUSSIAN
@@ -802,11 +806,11 @@ spec:
         - name: source_ru
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.nam.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.tab"
         - name: edl_tab_nom_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.nom.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nom.tab"
         - name: edl_tab_pro_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.pro.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.pro.tab"
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         #SPANISH
@@ -815,11 +819,11 @@ spec:
         - name: source_es
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_es
-          value: "/output/WORKING/data/es/mention/es.nam.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nam.tab"
         - name: edl_tab_nom_filename_es
-          value: "/output/WORKING/data/es/mention/es.nom.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nom.tab"
         - name: edl_tab_pro_filename_es
-          value: "/output/WORKING/data/es/mention/es.pro.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.pro.tab"
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: log
@@ -833,9 +837,9 @@ spec:
             ls -ahl /output/WORKING/data/edl_data &>> ${log};
             ls -ahl /output/WORKING/data/es/ &>> ${log};
             ls -ahl /output/WORKING/data/es/edl/ &>> ${log};
-            python ./projs/docker_aida19/aida19.py ${lang} ${edl_tab_nam_filename} ${edl_tab_nom_filename} ${edl_tab_pro_filename} ${edl_output_dir} m36 &
-            python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_tab_nam_filename_ru} ${edl_tab_nom_filename_ru} ${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &
-            python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es} ${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &
+            python ./projs/docker_aida19/aida19.py ${lang} ${edl_tab_nam_filename} ${edl_tab_nom_filename} ${edl_tab_pro_filename} ${edl_output_dir} m36 &>> ${log} &
+            python ./projs/docker_aida19/aida19.py ${lang_ru} ${edl_tab_nam_filename_ru} ${edl_tab_nom_filename_ru} ${edl_tab_pro_filename_ru} ${edl_output_dir_ru} m36 &>> ${log} &
+            python ./projs/docker_aida19/aida19.py ${lang_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es} ${edl_tab_pro_filename_es} ${edl_output_dir_es} m36 &>> ${log} &
             wait &>> ${log};
             echo `date` - "END edl linking" &>> ${log};
         volumeMounts:
@@ -849,9 +853,11 @@ spec:
 ## ENGLISH edl-nominal-coreference
 ################################
 
-# TODO: not sure how to set --gpus device=1
       - name: edl-nominal-coreference-en
         image: laituan245/spanbert_entity_coref
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
@@ -933,8 +939,8 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START edl-nominal-conference-ru-es **" &>> ${log};
-            python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &
-            python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &
+            python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &>> ${log} &
+            python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &>> ${log} &
             wait &>> ${log};
             echo `date` - "END edl-nominal-conference-ru-es" &>> ${log};
 
@@ -1010,7 +1016,7 @@ spec:
           - echo `date` - "** START rewrite relation event OneIE **" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root}/merge/cs/entity.cs ${data_root}/merge/cs/relation.cs ${data_root}/merge/cs/event.cs ${data_root}/edl/merged.cs ${data_root}/relation/en.rel.cs ${data_root}/event/event_rewrite.cs &
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/cs/entity.cs ${data_root_es}/cs/relation.cs ${data_root_es}/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/cs/entity.cs ${data_root_ru}/cs/relation.cs ${data_root_ru}/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/merge/cs/entity.cs ${data_root_ru}/merge/cs/relation.cs ${data_root_ru}/merge/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
             wait &>> ${log};
             echo `date` - "END rewrite relation event OneIE" &>> ${log};
 
@@ -1231,6 +1237,9 @@ spec:
 
       - name: relation-extraction-fine-part1
         image: limanling/uiuc_ie_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1312,6 +1321,9 @@ spec:
 ################################
       - name: relation-extraction-event-time
         image: wenhycs/uiuc_event_time
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         workingDir: /EventTimeArg
         env:
@@ -1353,6 +1365,9 @@ spec:
 ################################
       - name: relation-extraction-fine-part2
         image: limanling/uiuc_ie_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1435,6 +1450,9 @@ spec:
 ################################
       - name: informative-justification
         image: panx27/aida20_mention
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1505,6 +1523,9 @@ spec:
 ################################
       - name: relation-extraction-fine-part3
         image: limanling/uiuc_ie_m36
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1523,11 +1544,11 @@ spec:
         - name: relation_result_dir
           value: "/output/WORKING/data/en/relation"
         - name: edl_tab_nam
-          value: "en.nam.tagged.tab"
+          value: "en.nam.tab"
         - name: edl_tab_nom
-          value: "en.nom.tagged.tab"
+          value: "en.nom.tab"
         - name: edl_tab_pro
-          value: "en.pro.tagged.tab"
+          value: "en.pro.tab"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
@@ -1544,11 +1565,11 @@ spec:
         - name: relation_result_dir_ru
           value: "/output/WORKING/data/ru/relation"
         - name: edl_tab_nam_ru
-          value: "ru.nam.tagged.tab"
+          value: "ru.nam.tab"
         - name: edl_tab_nom_ru
-          value: "ru.nom.tagged.tab"
+          value: "ru.nom.tab"
         - name: edl_tab_pro_ru
-          value: "ru.pro.tagged.tab"
+          value: "ru.pro.tab"
         #SPANISH
         - name: lang_es
           value: "es"
@@ -1565,11 +1586,11 @@ spec:
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
         - name: edl_tab_nam_es
-          value: "es.nam.tagged.tab"
+          value: "es.nam.tab"
         - name: edl_tab_nom_es
-          value: "es.nom.tagged.tab"
+          value: "es.nom.tab"
         - name: edl_tab_pro_es
-          value: "es.pro.tagged.tab"
+          value: "es.pro.tab"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
@@ -1597,9 +1618,6 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-
-#TODO: DAN all of the above --gpus device=1
 
 ################################
 ## EN - Event (Fine-grained)
@@ -1882,9 +1900,9 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START Temporal 4 tuple generation **" &>> ${log};
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename {event_cold_start_filename} --read_cs_event --parent_children_filename {parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename {output_filename} --lang {lang} &
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename {event_cold_start_filename_ru} --parent_children_filename {parent_child_tab_path_ru} --output_filename {output_filename_ru} --lang {lang_ru} &
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename {event_cold_start_filename_es} --parent_children_filename {parent_child_tab_path_es} --output_filename {output_filename_es} --lang {lang_es} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename ${event_cold_start_filename} --read_cs_event --parent_children_filename ${parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename ${output_filename} --lang ${lang} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename ${event_cold_start_filename_ru} --parent_children_filename ${parent_child_tab_path_ru} --output_filename ${output_filename_ru} --lang ${lang_ru} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename ${event_cold_start_filename_es} --parent_children_filename ${parent_child_tab_path_es} --output_filename ${output_filename_es} --lang ${lang_es} &
            wait &>> ${log};
            echo `date` - "END Temporal 4 tuple generation **" &>> ${log};
         volumeMounts:
