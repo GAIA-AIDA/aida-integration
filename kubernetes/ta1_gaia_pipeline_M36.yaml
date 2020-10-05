@@ -793,11 +793,11 @@ spec:
         - name: source
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename
-          value: "/output/WORKING/data/en/merge/mention/en.nam.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nam.tab"
         - name: edl_tab_nom_filename
-          value: "/output/WORKING/data/en/merge/mention/en.nom.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.nom.tab"
         - name: edl_tab_pro_filename
-          value: "/output/WORKING/data/en/merge/mention/en.pro.tagged.tab"
+          value: "/output/WORKING/data/en/merge/mention/en.pro.tab"
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         #RUSSIAN
@@ -806,11 +806,11 @@ spec:
         - name: source_ru
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_ru
-          value: "/output/WORKING/data/ru/merge/mention/ru.nam.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.tab"
         - name: edl_tab_nom_filename_ru
-          value: "/output/WORKING/data/ru/merge/mention/ru.nom.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nom.tab"
         - name: edl_tab_pro_filename_ru
-          value: "/output/WORKING/data/ru/merge/mention/ru.pro.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.pro.tab"
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         #SPANISH
@@ -819,11 +819,11 @@ spec:
         - name: source_es
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_es
-          value: "/output/WORKING/data/es/mention/es.nam.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nam.tab"
         - name: edl_tab_nom_filename_es
-          value: "/output/WORKING/data/es/mention/es.nom.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.nom.tab"
         - name: edl_tab_pro_filename_es
-          value: "/output/WORKING/data/es/mention/es.pro.tagged.tab"
+          value: "/output/WORKING/data/es/mention/es.pro.tab"
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: log
@@ -1544,11 +1544,11 @@ spec:
         - name: relation_result_dir
           value: "/output/WORKING/data/en/relation"
         - name: edl_tab_nam
-          value: "en.nam.tagged.tab"
+          value: "en.nam.tab"
         - name: edl_tab_nom
-          value: "en.nom.tagged.tab"
+          value: "en.nom.tab"
         - name: edl_tab_pro
-          value: "en.pro.tagged.tab"
+          value: "en.pro.tab"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
@@ -1565,11 +1565,11 @@ spec:
         - name: relation_result_dir_ru
           value: "/output/WORKING/data/ru/relation"
         - name: edl_tab_nam_ru
-          value: "ru.nam.tagged.tab"
+          value: "ru.nam.tab"
         - name: edl_tab_nom_ru
-          value: "ru.nom.tagged.tab"
+          value: "ru.nom.tab"
         - name: edl_tab_pro_ru
-          value: "ru.pro.tagged.tab"
+          value: "ru.pro.tab"
         #SPANISH
         - name: lang_es
           value: "es"
@@ -1586,11 +1586,11 @@ spec:
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
         - name: edl_tab_nam_es
-          value: "es.nam.tagged.tab"
+          value: "es.nam.tab"
         - name: edl_tab_nom_es
-          value: "es.nom.tagged.tab"
+          value: "es.nom.tab"
         - name: edl_tab_pro_es
-          value: "es.pro.tagged.tab"
+          value: "es.pro.tab"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
