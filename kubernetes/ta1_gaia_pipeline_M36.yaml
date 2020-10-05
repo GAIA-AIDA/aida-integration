@@ -17,6 +17,10 @@ spec:
           nfs:
             server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t
             path: /
+        - name: refkb-efs
+          nfs:
+            server: fs-dacc6a58.efs.us-east-1.amazonaws.com #m36-dryrun-refkb-efs (fs-dacc6a58) - sudo mount -t efs -o tls fs-dacc6a58:/ efs
+            path: /
         #If you want to use a local folder as a volume, you can remove the NFS above and recreate them with a local volume for testing. The names need to match with the volumeMounts of the container
         # - name: input-efs
           # hostPath:
@@ -26,6 +30,30 @@ spec:
           # path: "C:/some/local/output"
 
       initContainers:
+      - name: gaia-mongodb-pod
+        image: panx27/edl
+        env:
+        - name: REF_KB
+          value: "/refkb"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+         - mkdir -p /output/WORKING;
+           echo `date` - "** START Mongo Import KB **" &>> ${log};
+           python ./projs/docker_aida19/kb/import_kb.py /refkb/data/entities.tab &>> ${log};
+           echo `date` - "END Mongo Import KB" &>> ${log};
+         - mkdir -p /output/WORKING;
+           echo `date` - "** START Mongo Import Mentions **" &>> ${log};
+           python ./projs/docker_aida19/kb/import_mentions.py /refkb/data/entities.tab &>> ${log};
+           echo `date` - "END Mongo Import Mentions" &>> ${log};
+        volumeMounts:
+          - name: refkb-efs
+            mountPath: "/refkb"
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+        securityContext:
+          privileged: true
 
 ###############################
 # ISI AIDA-TOOLS
@@ -2579,6 +2607,7 @@ spec:
             --root_folder /output/WORKING/data
             --final_dir_name final
             --output_folder /output/INTER-TA &>> ${log};
+            ls -ahl /output/INTER-TA &>> ${log};
             echo `date` - "END Merging Results" &>> ${log};
             #sleep 8h
             #sleep is used to allow me to get into the container with: kubectl exec -it gaia-ta1-pipeline-xxxxx -c merging-results
