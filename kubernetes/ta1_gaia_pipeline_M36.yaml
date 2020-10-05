@@ -1682,7 +1682,7 @@ spec:
             echo "Event rule-based" &>> ${log};
 
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py
-            ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log;
+            ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
             echo `date` - "Completed new_event_framenet.py" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py
             ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
