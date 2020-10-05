@@ -751,7 +751,7 @@ spec:
         - name: lang_ru
           value: "ru"
         - name: edl_tab_nam_bio_ru
-          value: "/output/WORKING/data/ru/mention/ru.nam.bio"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.bio"
         - name: entity_fine_model_ru
           value: "/output/WORKING/data/ru/edl/merged_fine.tsv"
         #SPANISH
@@ -806,11 +806,11 @@ spec:
         - name: source_ru
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.nam.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.tagged.tab"
         - name: edl_tab_nom_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.nom.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.nom.tagged.tab"
         - name: edl_tab_pro_filename_ru
-          value: "/output/WORKING/data/ru/mention/ru.pro.tagged.tab"
+          value: "/output/WORKING/data/ru/merge/mention/ru.pro.tagged.tab"
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         #SPANISH
@@ -1016,7 +1016,7 @@ spec:
           - echo `date` - "** START rewrite relation event OneIE **" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root}/merge/cs/entity.cs ${data_root}/merge/cs/relation.cs ${data_root}/merge/cs/event.cs ${data_root}/edl/merged.cs ${data_root}/relation/en.rel.cs ${data_root}/event/event_rewrite.cs &
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/cs/entity.cs ${data_root_es}/cs/relation.cs ${data_root_es}/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/cs/entity.cs ${data_root_ru}/cs/relation.cs ${data_root_ru}/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/merge/cs/entity.cs ${data_root_ru}/merge/cs/relation.cs ${data_root_ru}/merge/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
             wait &>> ${log};
             echo `date` - "END rewrite relation event OneIE" &>> ${log};
 
