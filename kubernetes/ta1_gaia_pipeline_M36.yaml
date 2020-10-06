@@ -1580,12 +1580,12 @@ spec:
           value: "/output/WORKING/data/en/event"
         - name: relation_result_dir
           value: "/output/WORKING/data/en/relation"
-        - name: edl_tab_nam
-          value: "en.nam.tab"
-        - name: edl_tab_nom
-          value: "en.nom.tab"
-        - name: edl_tab_pro
-          value: "en.pro.tab"
+        - name: edl_tab_nam_filename
+          value: "/output/WORKING/data/en/merge/mention/en.nam.tab"
+        - name: edl_tab_nom_filename
+          value: "/output/WORKING/data/en/merge/mention/en.nom.tab"
+        - name: edl_tab_pro_filename
+          value: "/output/WORKING/data/en/merge/mention/en.pro.tab"
         #RUSSIAN
         - name: lang_ru
           value: "ru"
@@ -1601,12 +1601,12 @@ spec:
           value: "/output/WORKING/data/ru/event"
         - name: relation_result_dir_ru
           value: "/output/WORKING/data/ru/relation"
-        - name: edl_tab_nam_ru
-          value: "ru.nam.tab"
-        - name: edl_tab_nom_ru
-          value: "ru.nom.tab"
-        - name: edl_tab_pro_ru
-          value: "ru.pro.tab"
+        - name: edl_tab_nam_filename_ru
+          value: "/output/WORKING/data/ru/merge/mention/ru.nam.tab"
+        - name: edl_tab_nom_filename_ru
+          value: "/output/WORKING/data/ru/merge/mention/ru.nom.tab"
+        - name: edl_tab_pro_filename_ru
+          value: "/output/WORKING/data/ru/merge/mention/ru.pro.tab"
         #SPANISH
         - name: lang_es
           value: "es"
@@ -1622,30 +1622,30 @@ spec:
           value: "/output/WORKING/data/es/event"
         - name: relation_result_dir_es
           value: "/output/WORKING/data/es/relation"
-        - name: edl_tab_nam_es
-          value: "es.nam.tab"
-        - name: edl_tab_nom_es
-          value: "es.nom.tab"
-        - name: edl_tab_pro_es
-          value: "es.pro.tab"
+        - name: edl_tab_nam_filename_es
+          value: "/output/WORKING/data/es/mention/es.nam.tab"
+        - name: edl_tab_nom_filename_es
+          value: "/output/WORKING/data/es/mention/es.nom.tab"
+        - name: edl_tab_pro_filename_es
+          value: "/output/WORKING/data/es/mention/es.pro.tab"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START relation extraction fine (Part 3) **" &>> ${log};
 
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_output_dir}/${edl_tab_nam} ${edl_output_dir}/${edl_tab_nom}
-            ${edl_output_dir}/${edl_tab_pro} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang}${source} ${edl_tab_nam_filename} ${edl_tab_nom_filename}
+            ${edl_tab_pro_filename} ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs
             ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt &>> ${log};
             echo `date` - "Completed rewrite_mention_confidence.py" &>> ${log};
 
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_output_dir_ru}/${edl_tab_nam_ru} ${edl_output_dir_ru}/${edl_tab_nom_ru}
-            ${edl_output_dir_ru}/${edl_tab_pro_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru}${source_ru} ${edl_tab_nam_filename_ru} ${edl_tab_nom_filename_ru}
+            ${edl_tab_pro_filename_ru} ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs
             ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt &>> ${log};
             echo `date` - "Completed rewrite_mention_confidence.py RU" &>> ${log};
 
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es}${source_es} ${edl_output_dir_es}/${edl_tab_nam_es} ${edl_output_dir_es}/${edl_tab_nom_es}
-            ${edl_output_dir_es}/${edl_tab_pro_ru} ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es}${source_es} ${edl_tab_nam_filename_es} ${edl_tab_nom_filename_es}
+            ${edl_tab_pro_filename_es} ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs
             ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt &>> ${log};
             echo `date` - "END Completed rewrite_mention_confidence.py ES" &>> ${log};
 
