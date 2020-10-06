@@ -1540,12 +1540,11 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START relation extraction fine (Part 3) **" &>> ${log};
-
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang} ${data_root}/merge/mention/${lang}.nam.tab ${data_root}/merge/mention/${lang}.nom.tab ${data_root}/merge/mention/${lang}.pro.tab ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru} ${data_root_ru}/merge/mention/${lang_ru}.nam.tab ${data_root_ru}/merge/mention/${lang_ru}.nom.tab ${data_root_ru}/merge/mention/${lang_ru}.pro.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es} ${data_root_es}/mention/${lang_es}.nam.tab ${data_root_es}/mention/${lang_es}.nom.tab ${data_root_es}/mention/${lang_es}.pro.tab ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt &>> ${log};
-            
             echo `date` - "Completed rewrite_mention_confidence.py" &>> ${log};
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1724,7 +1723,7 @@ spec:
 ################################
 ## Event coreference (RU/ES)
 ################################
-      - name: event-coreference
+      - name: event-coreference-ru-es
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
         env:
@@ -1749,25 +1748,27 @@ spec:
         - name: event_result_dir_ru
           value: "/output/WORKING/data/ru/event"
         # SPANISH
-       - name: lang_es
-         value: "es"
-       - name: ltf_source_es
-         value: "/output/WORKING/data/es/ltf"
-       - name: rsd_source_es
-         value: "/output/WORKING/data/es/rsd"
-       - name: event_result_dir_es
-         value: "/output/WORKING/data/es/event"
+        - name: lang_es
+          value: "es"
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
             ## NOTE: /event/aida_event_coreference/gail_event_coreference_test_${lang}.py -> r = requests.post('http://127.0.0.1:6001/aida_event_coreference_eng', json=json_string) -> r = requests.post('http://event-coreference-en:6001/aida_event_coreference_eng', json=json_string)
           # - sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test.py;
             echo `date` - "** Event coreference RU **";
-            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_result_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru};
+            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_result_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru} --kubernetes &>> ${log};
             echo `date` - "Completed Event coreference RU";
 
             # sed -i 's/127.0.0.1/event-coreference-es/' /event/aida_event_coreference/gail_event_coreference_test.py;
             echo `date` - "** Event coreference ES **";
-            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es};
+            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es} --kubernetes &>> ${log};
             echo `date` - "Completed Event coreference ES";
           
         volumeMounts:
@@ -1775,7 +1776,7 @@ spec:
             mountPath: "/input"
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST) 
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 
 ################################
