@@ -1390,8 +1390,6 @@ spec:
 
             wait &>> ${log};
             echo `date` - "** Informative Justification ** RU" &>> ${log};
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
             echo `date` - "END Informative Justification RU" &>> ${log};
 
@@ -1762,7 +1760,7 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
             ## NOTE: /event/aida_event_coreference/gail_event_coreference_test_${lang}.py -> r = requests.post('http://127.0.0.1:6001/aida_event_coreference_eng', json=json_string) -> r = requests.post('http://event-coreference-en:6001/aida_event_coreference_eng', json=json_string)
-          - sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test.py;
+          # - sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test.py;
             echo `date` - "** Event coreference RU **";
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_result_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru};
             echo `date` - "Completed Event coreference RU";
@@ -1831,9 +1829,9 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START Temporal 4 tuple generation **" &>> ${log};
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename ${event_cold_start_filename} --read_cs_event --parent_children_filename ${parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename ${output_filename} --lang ${lang} &
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename ${event_cold_start_filename_ru} --parent_children_filename ${parent_child_tab_path_ru} --output_filename ${output_filename_ru} --lang ${lang_ru} &
-           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename ${event_cold_start_filename_es} --parent_children_filename ${parent_child_tab_path_es} --output_filename ${output_filename_es} --lang ${lang_es} &
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename} --event_cold_start_filename ${event_cold_start_filename} --read_cs_event --parent_children_filename ${parent_child_tab_path} --use_dct_as_default --ltf_path ${ltf_path} --output_filename ${output_filename} --lang ${lang} &>> ${log};
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_ru} --event_cold_start_filename ${event_cold_start_filename_ru} --parent_children_filename ${parent_child_tab_path_ru} --output_filename ${output_filename_ru} --lang ${lang_ru} &>> ${log};
+           python aida_event_time_pipeline.py --time_cold_start_filename ${time_cold_start_filename_es} --event_cold_start_filename ${event_cold_start_filename_es} --parent_children_filename ${parent_child_tab_path_es} --output_filename ${output_filename_es} --lang ${lang_es} &>> ${log};
            wait &>> ${log};
            echo `date` - "END Temporal 4 tuple generation **" &>> ${log};
         volumeMounts:
@@ -1882,9 +1880,9 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
          - echo `date` - "** START Event Informative Justification **" &>> ${log};
-           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source} ${event_corefer_time} ${event_final} --eval m36 &
-           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_ru} ${event_corefer_time_ru} ${event_final_ru} --eval m36 &
-           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_es} ${event_corefer_time_es} ${event_final_es} --eval m36 &
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source} ${event_corefer_time} ${event_final} --eval m36 &>> ${log};
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_ru} ${event_corefer_time_ru} ${event_final_ru} --eval m36 &>> ${log};
+           /opt/conda/envs/py36/bin/python /event/aida_event/postprocessing_event_informative_mentions.py ${ltf_source_es} ${event_corefer_time_es} ${event_final_es} --eval m36 &>> ${log};
            wait &>> ${log};
            echo `date` - "END Event Informative Justification" &>> ${log};
         volumeMounts:
