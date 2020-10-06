@@ -1725,7 +1725,7 @@ spec:
 ################################
 ## Event coreference (RU/ES)
 ################################
-      - name: event-coreference
+      - name: event-coreference-ru-es
         image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
         env:
@@ -1763,11 +1763,11 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
             ## NOTE: /event/aida_event_coreference/gail_event_coreference_test_${lang}.py -> r = requests.post('http://127.0.0.1:6001/aida_event_coreference_eng', json=json_string) -> r = requests.post('http://event-coreference-en:6001/aida_event_coreference_eng', json=json_string)
-# - sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test.py;
-# sed -i 's/127.0.0.1/event-coreference-es/' /event/aida_event_coreference/gail_event_coreference_test.py;
-          - echo `date` - "** Event coreference RU **" &>> ${log};
+          - sed -i 's/127.0.0.1/event-coreference-ru/' /event/aida_event_coreference/gail_event_coreference_test.py;
+            echo `date` - "** Event coreference RU **" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_result_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru} &>> ${log};
             echo `date` - "Completed Event coreference RU" &>> ${log};
+            sed -i 's/127.0.0.1/event-coreference-es/' /event/aida_event_coreference/gail_event_coreference_test.py;
             echo `date` - "** Event coreference ES **" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es} &>> ${log};
             echo `date` - "Completed Event coreference ES" &>> ${log};
