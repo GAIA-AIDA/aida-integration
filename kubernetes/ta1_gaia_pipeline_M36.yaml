@@ -224,14 +224,19 @@ spec:
          - echo `date` - "** START USC Object Detection **" &>> ${log_filename};
            mkdir -p /upload/USC_Vision_Data/m18_eval/;
            mkdir -p ${OBJDET_OUTPUT};
+           mkdir -p /output/WORKING/data;
            cd /aida/src/;
            /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log_filename};
            pwd &>> ${log_filename};
            ls -ahl ./data &>> ${log_filename};
            /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log_filename};
            find /upload/USC_Vision_Data/m18_eval -name '*.*'  &>> ${log_filename};
+           cp /output/WORKING/data/op_imgs_aida_m18_eval_dict_for_proc.json /aida/src/data/aida_m18_eval;
+           cd ./open_images_pfdet/;
+           /root/conda/envs/aida-env/bin/python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1" --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log_filename};
            RESULTS=/upload/USC_Vision_Data/m18_eval;
            ls -ahl ${RESULTS}  &>> ${log_filename};
+           ls -ahl /output/WORKING/data &>> {log_filename};
            cp -r ${RESULTS} ${OBJDET_OUTPUT} &>> ${log_filename};
            echo `date` - "END USC Object Detection" &>> ${log_filename};
 # TODO: confirm exact files copied out.
@@ -851,6 +856,7 @@ spec:
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_es
           value: "/output/WORKING/data/es/mention/es.nam.tab"
+### TODO: is the above path correct?   merge? like others?  Related to error in logs?
         - name: edl_tab_nom_filename_es
           value: "/output/WORKING/data/es/mention/es.nom.tab"
         - name: edl_tab_pro_filename_es
@@ -1194,7 +1200,7 @@ spec:
             --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_ru}.cs --en_combo_outfname ${edl_output_dir_ru}/filler_${lang_ru}_all.cs --en_color_outfname ${edl_output_dir_ru}/${lang_ru}.color.cs &
 
             /opt/conda/envs/py36/bin/python /relation/FineRelationExtraction/utils/color_fillers.py --en_color_fill_tab_fname ${edl_output_dir_es}/${lang_es}.linking.col.tab
-            --en_fill_cs_fname ${edl_output_dir_ru}/filler_${lang_es}.cs --en_combo_outfname ${edl_output_dir_es}/filler_${lang_es}_all.cs --en_color_outfname ${edl_output_dir_es}/${lang_es}.color.cs &
+            --en_fill_cs_fname ${edl_output_dir_es}/filler_${lang_es}.cs --en_combo_outfname ${edl_output_dir_es}/filler_${lang_es}_all.cs --en_color_outfname ${edl_output_dir_es}/${lang_es}.color.cs &
 
             wait &>> ${log};
             echo `date` - "END Completed color_fillers.py" &>> ${log};
@@ -1460,14 +1466,14 @@ spec:
             echo `date` - "russian" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs &>> ${log};
             echo `date` - "add protester RU" &>> ${log};
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/event_rewrite.css ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_ru}/event_rewrite.cs ${edl_output_dir_ru}/merged_all_fine.cs ${edl_output_dir_ru}/merged_all_fine_protester.cs &>> ${log};
             echo `date` - "** Informative Justification ** RU" &>> ${log};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/entity_informative.py ${edl_output_dir_ru}/chunk.txt ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
 
             echo `date` - "spanish" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs --output_file ${edl_output_dir_es}/merged_all_fine.cs &>> ${log};
             echo `date` - "add protester ES" &>> ${log};
-            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_es}/event_rewrite.css ${edl_output_dir_es}/merged_all_fine.cs ${edl_output_dir_es}/merged_all_fine_protester.cs &>> ${log};
+            /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir_es}/event_rewrite.cs ${edl_output_dir_es}/merged_all_fine.cs ${edl_output_dir_es}/merged_all_fine_protester.cs &>> ${log};
             echo `date` - "END relation extraction fine (Part 2)" &>> ${log};
         volumeMounts:
           - name: input-efs
@@ -1502,20 +1508,20 @@ spec:
         - name: relation_result_dir
           value: "/output/WORKING/data/en/relation"
         #RUSSIAN
-        - name: lang_ru
-          value: "ru"
-        - name: edl_output_dir_ru
-          value: "/output/WORKING/data/ru/edl"
-        - name: source_ru
-          value: "" # no asr or ocr atm
-        - name: ltf_source_ru
-          value: "/output/WORKING/data/ru/ltf"
-        - name: rsd_source_ru
-          value: "/output/WORKING/data/ru/rsd"
-        - name: event_result_dir_ru
-          value: "/output/WORKING/data/ru/event"
-        - name: relation_result_dir_ru
-          value: "/output/WORKING/data/ru/relation"
+#        - name: lang_ru
+#          value: "ru"
+#        - name: edl_output_dir_ru
+#          value: "/output/WORKING/data/ru/edl"
+#        - name: source_ru
+#          value: "" # no asr or ocr atm
+#        - name: ltf_source_ru
+#          value: "/output/WORKING/data/ru/ltf"
+#        - name: rsd_source_ru
+#          value: "/output/WORKING/data/ru/rsd"
+#        - name: event_result_dir_ru
+#          value: "/output/WORKING/data/ru/event"
+#        - name: relation_result_dir_ru
+#          value: "/output/WORKING/data/ru/relation"
         #SPANISH
         - name: lang_es
           value: "es"
@@ -1535,11 +1541,11 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
+#python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
           - echo `date` - "** START Informative Justification **" &>> ${log};
             python ./extend.py ${lang} ${ltf_source} ${edl_output_dir}/merged_all_fine_protester.cs ${edl_output_dir}/merged_all_fine_info.cs_tmp &>> ${log};
             python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs &>> ${log};
 
-            python ./extend.py ${lang_ru} ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_protester.cs ${edl_output_dir_ru}/merged_all_fine_info.cs &>> ${log};
             python ./extend.py ${lang_es} ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_protester.cs ${edl_output_dir_es}/merged_all_fine_info.cs &>> ${log};
             echo `date` - "END Informative Justification" &>> ${log};
         volumeMounts:
