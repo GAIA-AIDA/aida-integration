@@ -193,7 +193,7 @@ metadata:
   name: event-coreference-ru
 spec:
   ports:
-    - port: 6101
+    - port: 6301
       targetPort: 6301
   selector:
     app: event-coreference-ru 
