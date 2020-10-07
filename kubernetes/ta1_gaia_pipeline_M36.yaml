@@ -2406,6 +2406,40 @@ spec:
 ## ISI: DPN
 ## See notes.  TBD.
 
+################################
+## modify aif using entity-fishing
+################################
+## ISI: Mitchell DeHaven
+##
+## Here are the command I used the following commands to run the Docker files:
+## Creating a network to communicate between containers:
+## docker network create --driver bridge efbridge
+## TODO: compare to service network?
+## Running the entity-fishing container (I don't know that -p 8090:8090 is necessary here):
+## docker run -p 8090:8090 --network efbridge --name entity-fishing mitchelldehaven/entity-fishing:small
+
+#Running the Python scripts to modify AIF (after entity-fishing has started and is running; ~2-3 minutes):
+#docker run --network=efbridge -v /Users/mdehaven/docker_data/ldc_data_small:/input
+# -v /Users/mdehaven/docker_data/GAIA_1_final_small:/output -e INPUT=/input -e OUTPUT=/output mitchelldehaven/modify_aif:latest.
+      - name: modify-aif-entity-fishing
+        image: mitchelldehaven/modify_aif:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+#TODO: include command, list inputs and outputs
+          - echo `date` - "** START entity fishing **" &>> ${log};
+            echo `date` - "END entity fishing" &>> ${log};
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+
       restartPolicy: Never
 
 ################################
