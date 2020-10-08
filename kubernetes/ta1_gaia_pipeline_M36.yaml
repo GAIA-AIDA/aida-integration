@@ -947,7 +947,7 @@ spec:
         args:
           - echo `date` - "** START edl-nominal-coreference-es **" &>> ${log};
             echo "Begin edl-nominal-coreference-es for "${edl_tab_link_es_es} &>> ${log};
-            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir_es}/${edl_tab_link_es_es} -edl_freebase ${edl_output_dir_es}/${edl_tab_link_fb_es} -l ${data_root_es_es}/ltf -o ${edl_output_dir_es}/merged_final.tab &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir_es}/${edl_tab_link_es_es} -edl_freebase ${edl_output_dir_es}/${edl_tab_link_fb_es} -l ${data_root_es}/ltf -o ${edl_output_dir_es}/merged_final.tab &>> ${log};
             echo `date` - "END edl-nominal-coreference-es" &>> ${log};
         volumeMounts:
           - name: input-efs
@@ -1381,7 +1381,7 @@ spec:
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir}/merged_fine.cs ${edl_output_dir}/filler_fine.cs --output_file ${edl_output_dir}/merged_all_fine.cs &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_ru}/merged_fine.cs ${edl_output_dir_ru}/filler_fine.cs --output_file ${edl_output_dir_ru}/merged_all_fine.cs &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${edl_output_dir_es}/merged_fine.cs ${edl_output_dir_es}/filler_fine.cs --output_file ${edl_output_dir_es}/merged_all_fine.cs &>> ${log};
-            
+
             wait &>> ${log};
             echo `date` - "add protester" &>> ${log};
             /opt/conda/envs/py36/bin/python /entity/aida_edl/add_protester.py ${event_result_dir}/event_rewrite.cs ${edl_output_dir}/merged_all_fine.cs ${edl_output_dir}/merged_all_fine_protester.cs &>> ${log};
@@ -1466,7 +1466,7 @@ spec:
 
             wait &>> ${log};
             python ./revise.py ${edl_output_dir}/merged_all_fine_info.cs_tmp ${edl_output_dir}/merged_all_fine_info.cs &>> ${log};
-            
+
             echo `date` - "END Informative Justification" &>> ${log};
         volumeMounts:
           - name: input-efs
@@ -1584,7 +1584,7 @@ spec:
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
             echo `date` - "Completed new_event_framenet.py" &>> ${log};
-            
+
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
             echo `date` - "Completed new_event_dependency.py" &>> ${log};
@@ -1592,7 +1592,7 @@ spec:
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
             echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
-            
+
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
             wait &>> ${log};
@@ -1822,7 +1822,7 @@ spec:
             # echo `date` - "** Event coreference ES **";
             # /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es} --kubernetes &>> ${log};
             # echo `date` - "Completed Event coreference ES";
-          
+
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
