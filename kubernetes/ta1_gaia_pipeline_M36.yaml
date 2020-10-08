@@ -110,38 +110,6 @@ spec:
 ## ISI: DPN; Xujun Peng
 ## see: https://github.com/isi-vista/aida-integration/#ocr
 
-###############################
-# ISI ASR
-###############################
-## ISI: DPN: Xujun Peng
-## see https://github.com/isi-vista/aida-integration/#asr
-## $ docker run -it -e CUDA_VISIBLE_DEVICES=${AVAILABLE_GPU} --gpus=${AVAILABLE_GPU} --name asr  -v /host/location/output:/output gaiaaida/asr:0.2
-      - name: isi-asr
-        image: gaiaaida/asr:0.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: parent_child_tab
-          value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
-        - name: log
-          value: "/output/WORKING/full-text-log.txt"
-        command: ["/bin/bash", "-c"]
-        args:
-         - echo `date` - "** START ASR **" &>> ${log};
-           ls -ahl /output/WORKING/mp4/ &>> ${log};
-           mkdir -p /output/WORKING/output/;
-           /bin/bash -c ./entrypoint.sh &>> ${log};
-           ls -ahl /output/WORKING/output/ &>> ${log};
-           echo `date` - "END ASR" &>> ${log};
-
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
 ################################
 ## Columbia University Object Detection
 ################################
@@ -298,85 +266,6 @@ spec:
             readOnly: true #Input Volume for worker will be set to readOnly
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-# ###############################################################################
-# # BEGIN - Commented per Dan and Manling
-# ###############################################################################
-
-      # - name: asr
-        # image: limanling/uiuc_ie_m18
-        # imagePullPolicy: IfNotPresent
-        # env:
-        # - name: en_asr_aln
-          # value: null
-        # - name: en_asr_rsd
-          # value: "/output/WORKING/data/en_asr/rsd"
-        # - name: en_asr_rsd_file_list
-          # value: "/output/WORKING/data/en_asr/en_asr_truecase_list"
-        # - name: en_asr_ltf
-          # value: "/output/WORKING/data/en_asr/ltf"
-        # - name: en_asr_mapping_file_path
-          # value: "/output/WORKING/data/en_asr/en_asr_mapping"
-        # command: ["/bin/bash", "-c"]
-        # args:
-          # - /opt/conda/envs/py36/bin/python /preprocessing/preprocess_asr.py ${en_asr_aln} $(en_asr_rsd) $(en_asr_rsd_file_list);
-          # #for merging, temp placement
-          # - mkdir -p /output/WORKING/data/kb/ttl/final;
-            # mkdir -p $(en_asr_ltf);
-            # /opt/conda/envs/py36/bin/python /aida_utilities/rsd2ltf.py $(en_asr_rsd) $(en_asr_ltf) --seg_option nltk+linebreak --tok_option space --extension .rsd.txt;
-            # /opt/conda/envs/py36/bin/python /preprocessing/asr_sentence_mapping.py $(en_asr_ltf) ${en_asr_aln} $(en_asr_mapping_file_path)
-        # volumeMounts:
-          # - name: input-efs
-            # mountPath: "/input"
-            # readOnly: true #Input Volume for worker will be set to readOnly
-          # - name: output-efs
-            # mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-      # - name: english-ocr
-        # image: limanling/uiuc_ie_m18
-        # imagePullPolicy: IfNotPresent
-        # env:
-        # - name: en_ocr_csv_file
-          # value: null
-        # - name: en_ocr_rsd
-          # value: "/output/WORKING/data/en_ocr/rsd"
-        # - name: en_ocr_ltf
-          # value: "/output/WORKING/data/en_ocr/ltf"
-        # command: ["/bin/bash", "-c"]
-        # args:
-          # #- /opt/conda/envs/py36/bin/python /preprocessing/preprocess_ocr.py ${en_ocr_csv_file} ${en_ocr_rsd}
-          # - mkdir -p ${en_ocr_ltf};
-            # /opt/conda/envs/py36/bin/python /aida_utilities/rsd2ltf.py ${en_ocr_rsd} ${en_ocr_ltf} --seg_option nltk+linebreak --tok_option unitok --extension .rsd.txt
-        # volumeMounts:
-          # - name: input-efs
-            # mountPath: "/input"
-            # readOnly: true #Input Volume for worker will be set to readOnly
-          # - name: output-efs
-            # mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-      # - name: russian-ocr
-        # image: limanling/uiuc_ie_m18
-        # imagePullPolicy: IfNotPresent
-        # env:
-        # - name: ru_ocr_csv_file
-          # value: null
-        # - name: ru_ocr_rsd
-          # value: "/output/WORKING/data/ru_ocr/rsd"
-        # - name: ru_ocr_ltf
-          # value: "/output/WORKING/data/ru_ocr/ltf"
-        # command: ["/bin/bash", "-c"]
-        # args:
-          # #- /opt/conda/envs/py36/bin/python /preprocessing/preprocess_ocr.py ${ru_ocr_csv_file} ${ru_ocr_rsd}
-          # - mkdir -p ${ru_ocr_ltf}
-          # - /opt/conda/envs/py36/bin/python /aida_utilities/rsd2ltf.py ${ru_ocr_rsd} ${ru_ocr_ltf} --seg_option nltk+linebreak --tok_option unitok --extension .rsd.txt
-        # volumeMounts:
-          # - name: input-efs
-            # mountPath: "/input"
-            # readOnly: true #Input Volume for worker will be set to readOnly
-          # - name: output-efs
-            # mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-# ###############################################################################
-# # END - Commented per Dan and Manling
-# ###############################################################################
 
 ################################
 ## generate-bio-list-en
@@ -828,7 +717,7 @@ spec:
         - name: lang
           value: "en"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: edl_tab_nam_filename
           value: "/output/WORKING/data/en/merge/mention/en.nam.tab"
         - name: edl_tab_nom_filename
@@ -841,7 +730,7 @@ spec:
         - name: lang_ru
           value: "ru"
         - name: source_ru
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: edl_tab_nam_filename_ru
           value: "/output/WORKING/data/ru/merge/mention/ru.nam.tab"
         - name: edl_tab_nom_filename_ru
@@ -854,7 +743,7 @@ spec:
         - name: lang_es
           value: "es"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: edl_tab_nam_filename_es
           value: "/output/WORKING/data/es/mention/es.nam.tab"
         - name: edl_tab_nom_filename_es
@@ -1214,7 +1103,7 @@ spec:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: rsd_source
@@ -1229,7 +1118,7 @@ spec:
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         - name: source_ru
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
         - name: rsd_source_ru
@@ -1244,7 +1133,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
@@ -1331,7 +1220,7 @@ spec:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: rsd_source
@@ -1346,7 +1235,7 @@ spec:
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         - name: source_ru
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
         - name: rsd_source_ru
@@ -1361,7 +1250,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
@@ -1416,7 +1305,7 @@ spec:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: rsd_source
@@ -1431,7 +1320,7 @@ spec:
 #        - name: edl_output_dir_ru
 #          value: "/output/WORKING/data/ru/edl"
 #        - name: source_ru
-#          value: "" # no asr or ocr atm
+#          value: "" # no asr or ocr
 #        - name: ltf_source_ru
 #          value: "/output/WORKING/data/ru/ltf"
 #        - name: rsd_source_ru
@@ -1446,7 +1335,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
@@ -1492,7 +1381,7 @@ spec:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: rsd_source
@@ -1509,7 +1398,7 @@ spec:
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         - name: source_ru
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
         - name: rsd_source_ru
@@ -1526,7 +1415,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: rsd_source_es
@@ -2023,7 +1912,7 @@ spec:
         - name: edl_output_dir
           value: "/output/WORKING/data/en/edl"
         - name: source
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source
           value: "/output/WORKING/data/en/ltf"
         - name: parent_child_tab_path
@@ -2046,7 +1935,7 @@ spec:
         - name: edl_output_dir_ru
           value: "/output/WORKING/data/ru/edl"
         - name: source_ru
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
         - name: parent_child_tab_path_ru
@@ -2065,7 +1954,7 @@ spec:
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: source_es
-          value: "" # no asr or ocr atm
+          value: "" # no asr or ocr
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
         - name: parent_child_tab_path_es
@@ -2398,12 +2287,6 @@ spec:
 ## Augment AIF
 ################################
 ## ISI: Elizabeth Lee
-## See notes.  TBD.
-
-################################
-## Remove ASR
-################################
-## ISI: DPN
 ## See notes.  TBD.
 
 ################################
