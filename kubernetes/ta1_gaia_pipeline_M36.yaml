@@ -606,7 +606,7 @@ spec:
         - name: lang_es
           value: "es"
         - name: edl_tab_nam_bio_es
-          value: "/output/WORKING/data/es/mention/es.nam.bio"
+          value: "/output/WORKING/data/es/merge/mention/es.nam.bio"
         - name: entity_fine_model_es
           value: "/output/WORKING/data/es/edl/merged_fine.tsv"
         - name: log
@@ -667,11 +667,11 @@ spec:
         - name: source_es
           value: "" # no asr or ocr atm
         - name: edl_tab_nam_filename_es
-          value: "/output/WORKING/data/es/mention/es.nam.tab"
+          value: "/output/WORKING/data/es/merge/mention/es.nam.tab"
         - name: edl_tab_nom_filename_es
-          value: "/output/WORKING/data/es/mention/es.nom.tab"
+          value: "/output/WORKING/data/es/merge/mention/es.nom.tab"
         - name: edl_tab_pro_filename_es
-          value: "/output/WORKING/data/es/mention/es.pro.tab"
+          value: "/output/WORKING/data/es/merge/mention/es.pro.tab"
         - name: edl_output_dir_es
           value: "/output/WORKING/data/es/edl"
         - name: log
@@ -732,34 +732,43 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
-# ################################
-# ## ENGLISH tab2cs
-# ################################
-# #Phi added 20200916, cant be a part of above anymore since it's a difference image now
-#       - name: tab2cs
-#         image: limanling/uiuc_ie_m36
-#         imagePullPolicy: IfNotPresent
-#         env:
-#         - name: edl_output_dir
-#           value: "/output/WORKING/data/en/edl"
-#         - name: log
-#           value: "/output/WORKING/full-text-log.txt"
-#         command: ["/bin/bash", "-c"]
-#         args:
-#           - echo `date` - "** START tab2cs **" &>> ${log};
-#             ls -ahl ${edl_output_dir};
-#             /opt/conda/envs/py36/bin/python /entity/aida_edl/tab2cs.py ${edl_output_dir}/merged_final.tab ${edl_output_dir}/merged.cs 'EDL' &>> ${log};
-#             ls -ahl ${edl_output_dir} &>> ${log};
-#             echo `date` - "END tab2cs" &>> ${log};
-#         volumeMounts:
-#           - name: input-efs
-#             mountPath: "/input"
-#             readOnly: true #Input Volume for worker will be set to readOnly
-#           - name: output-efs
-#             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+################################
+## SPANISH edl-nominal-coreference
+################################
+
+      - name: edl-nominal-coreference-es
+        image: laituan245/es_spanbert_entity_coref
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 1 # requesting 1 GPU
+        workingDir: /app
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: data_root_es
+          value: "/output/WORKING/data/es"
+        - name: edl_tab_link_es
+          value: "es.linking.tab"
+        - name: edl_tab_link_fb_es
+          value: "es.linking.freebase.tab"
+        - name: edl_output_dir_es
+          value: "/output/WORKING/data/es/edl"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "** START edl-nominal-coreference-es **" &>> ${log};
+            echo "Begin edl-nominal-coreference-es for "${edl_tab_link_es_es} &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir_es}/${edl_tab_link_es_es} -edl_freebase ${edl_output_dir_es}/${edl_tab_link_fb_es} -l ${data_root_es_es}/ltf -o ${edl_output_dir_es}/merged_final.tab &>> ${log};
+            echo `date` - "END edl-nominal-coreference-es" &>> ${log};
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
-## RU/ES edl-nominal-conference-tabcs
+## RU/ES dependency-based edl-nominal-conference-tabcs
 ################################
       - name: edl-nominal-conference-ru-es
         image: dylandilu/chuck_coreference
@@ -786,11 +795,11 @@ spec:
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
-          - echo `date` - "** START edl-nominal-conference-ru-es **" &>> ${log};
+          - echo `date` - "** START edl-nominal-conference-ru **" &>> ${log};
             python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &>> ${log} &
-            python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &>> ${log} &
+            # python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &>> ${log} &
             wait &>> ${log};
-            echo `date` - "END edl-nominal-conference-ru-es" &>> ${log};
+            echo `date` - "END edl-nominal-conference-ru" &>> ${log};
 
         volumeMounts:
           - name: input-efs
@@ -863,7 +872,7 @@ spec:
         args:
           - echo `date` - "** START rewrite relation event OneIE **" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root}/merge/cs/entity.cs ${data_root}/merge/cs/relation.cs ${data_root}/merge/cs/event.cs ${data_root}/edl/merged.cs ${data_root}/relation/en.rel.cs ${data_root}/event/event_rewrite.cs &
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/cs/entity.cs ${data_root_es}/cs/relation.cs ${data_root_es}/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_es}/merge/cs/entity.cs ${data_root_es}/merge/cs/relation.cs ${data_root_es}/merge/cs/event.cs ${data_root_es}/edl/merged.cs ${data_root_es}/relation/es.rel.cs ${data_root_es}/event/event_rewrite.cs &
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_entity_id.py ${data_root_ru}/merge/cs/entity.cs ${data_root_ru}/merge/cs/relation.cs ${data_root_ru}/merge/cs/event.cs ${data_root_ru}/edl/merged.cs ${data_root_ru}/relation/ru.rel.cs ${data_root_ru}/event/event_rewrite.cs &
             wait &>> ${log};
             echo `date` - "END rewrite relation event OneIE" &>> ${log};
@@ -1353,7 +1362,7 @@ spec:
           - echo `date` - "** START relation extraction fine (Part 3) **" &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang} ${data_root}/merge/mention/${lang}.nam.tab ${data_root}/merge/mention/${lang}.nom.tab ${data_root}/merge/mention/${lang}.pro.tab ${edl_output_dir}/${lang}.linking.tab ${edl_output_dir}/${lang}.linking.tab.candidates.json ${ltf_source} ${edl_output_dir}/merged_all_fine_info.cs ${edl_output_dir}/merged_all_fine_info_conf.cs ${edl_output_dir}/all_conf.txt &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_ru} ${data_root_ru}/merge/mention/${lang_ru}.nam.tab ${data_root_ru}/merge/mention/${lang_ru}.nom.tab ${data_root_ru}/merge/mention/${lang_ru}.pro.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab ${edl_output_dir_ru}/${lang_ru}.linking.tab.candidates.json ${ltf_source_ru} ${edl_output_dir_ru}/merged_all_fine_info.cs ${edl_output_dir_ru}/merged_all_fine_info_conf.cs ${edl_output_dir_ru}/all_conf.txt &>> ${log};
-            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es} ${data_root_es}/mention/${lang_es}.nam.tab ${data_root_es}/mention/${lang_es}.nom.tab ${data_root_es}/mention/${lang_es}.pro.tab ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/rewrite_mention_confidence.py ${lang_es} ${data_root_es}/merge/mention/${lang_es}.nam.tab ${data_root_es}/merge/mention/${lang_es}.nom.tab ${data_root_es}/merge/mention/${lang_es}.pro.tab ${edl_output_dir_es}/${lang_es}.linking.tab ${edl_output_dir_es}/${lang_es}.linking.tab.candidates.json ${ltf_source_es} ${edl_output_dir_es}/merged_all_fine_info.cs ${edl_output_dir_es}/merged_all_fine_info_conf.cs ${edl_output_dir_es}/all_conf.txt &>> ${log};
             echo `date` - "Completed rewrite_mention_confidence.py" &>> ${log};
 
         volumeMounts:
@@ -1531,6 +1540,56 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+
+################################
+## Event coreference - SPANISH
+################################
+      - name: event-coreference-es
+        image: laituan245/es_event_coref
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
+        env:
+        # #ENGLISH
+        # - name: lang
+        #   value: "en"
+        # - name: ltf_source
+        #   value: "/output/WORKING/data/en/ltf"
+        # - name: event_result_dir
+        #   value: "/output/WORKING/data/en/event"
+        # #RUSSIAN
+        # - name: lang_ru
+        #   value: "ru"
+        # - name: ltf_source_ru
+        #   value: "/output/WORKING/data/ru/ltf"
+        # - name: rsd_source_ru
+        #   value: "/output/WORKING/data/ru/rsd"
+        # - name: event_result_dir_ru
+        #   value: "/output/WORKING/data/ru/event"
+        #SPANISH
+        - name: lang_es
+          value: "es"
+        - name: ltf_source_es
+          value: "/output/WORKING/data/es/ltf"
+        - name: rsd_source_es
+          value: "/output/WORKING/data/es/rsd"
+        - name: event_result_dir_es
+          value: "/output/WORKING/data/es/event"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "** START Event Coreference - ES" &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 aida_event_coref.py -i ${event_result_dir_es}/events_fine_all_clean.cs -c ${event_result_dir_es}/events_corefer.cs -t ${event_result_dir_es}/events_corefer_confidence.tab -l ${ltf_source_es} &>> ${log};
+            echo `date` - "END Event Coreference - ES" &>> ${log};
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
 ################################
 ## Event coreference (RU/ES)
 ################################
@@ -1576,11 +1635,13 @@ spec:
           # sed -i 's/127.0.0.1/event-coreference-es/' /event/aida_event_coreference/gail_event_coreference_test.py;
           - echo `date` - "** Event coreference RU **" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_ru}/events_fine_all_clean.cs -o ${event_result_dir_ru}/events_corefer.cs -c ${event_result_dir_ru}/events_corefer_confidence.tab -r ${rsd_source_ru} -l ${lang_ru} --kubernetes &>> ${log};
-            echo `date` - "Completed Event coreference RU" &>> ${log};
-            echo `date` - "** Event coreference ES **" &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es} --kubernetes &>> ${log};
-            echo `date` - "Completed Event coreference ES" &>> ${log};
+            echo `date` - "Completed Event coreference RU";
 
+            # # sed -i 's/127.0.0.1/event-coreference-es/' /event/aida_event_coreference/gail_event_coreference_test.py;
+            # echo `date` - "** Event coreference ES **";
+            # /opt/conda/envs/py36/bin/python /event/aida_event_coreference/gail_event_coreference_test.py -i ${event_result_dir_es}/events_fine_all_clean.cs -o ${event_result_dir_es}/events_corefer.cs -c ${event_result_dir_es}/events_corefer_confidence.tab -r ${rsd_source_es} -l ${lang_es} --kubernetes &>> ${log};
+            # echo `date` - "Completed Event coreference ES";
+          
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
@@ -1807,7 +1868,7 @@ spec:
             echo `date` - "Start AIF converter" &>> ${log};
             /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py --input_cs ${data_root}/${lang}_full_link.cs --ltf_dir ${ltf_source} --output_ttl_dir ${data_root}/initial --lang ${lang} --eval m36 --evt_coref_score_tab ${event_result_dir}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path} --ent_vec_dir ${data_root}/merge/mention --ent_vec_files ${lang}.mention.hidden.txt --evt_vec_dir ${data_root}/merge/mention --evt_vec_files ${lang}.trigger.hidden.txt --event_embedding_from_file --freebase_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_grained_entity_type_path ${edl_output_dir}/${lang}.linking.freebase.fine.json --lorelei_link_mapping ${edl_output_dir}/lorelei_private_data.json --parent_child_tab_path ${parent_child_tab_path} &>> ${log};
             /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py --input_cs ${data_root_ru}/${lang_ru}_full_link.cs --ltf_dir ${ltf_source_ru} --output_ttl_dir ${data_root_ru}/initial --lang ${lang_ru} --eval m36 --evt_coref_score_tab ${event_result_dir_ru}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_ru} --ent_vec_dir ${data_root_ru}/merge/mention --ent_vec_files ${lang_ru}.mention.hidden.txt --evt_vec_dir ${data_root_ru}/merge/mention --evt_vec_files ${lang_ru}.trigger.hidden.txt --event_embedding_from_file --freebase_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_grained_entity_type_path ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --lorelei_link_mapping ${edl_output_dir_ru}/lorelei_private_data.json --parent_child_tab_path ${parent_child_tab_path_ru} &>> ${log};
-            /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py --input_cs ${data_root_es}/${lang_es}_full_link.cs --ltf_dir ${ltf_source_es} --output_ttl_dir ${data_root_es}/initial --lang ${lang_es} --eval m36 --evt_coref_score_tab ${event_result_dir_es}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_es} --ent_vec_dir ${data_root_es}/mention --ent_vec_files ${lang_es}.mention.hidden.txt --evt_vec_dir ${data_root_es}/mention --evt_vec_files ${lang_es}.trigger.hidden.txt --event_embedding_from_file --freebase_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_grained_entity_type_path ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json --lorelei_link_mapping ${edl_output_dir_es}/lorelei_private_data.json --parent_child_tab_path ${parent_child_tab_path_es} &>> ${log};
+            /opt/conda/envs/aida_entity/bin/python /postprocessing/aif_converter_combine.py --input_cs ${data_root_es}/${lang_es}_full_link.cs --ltf_dir ${ltf_source_es} --output_ttl_dir ${data_root_es}/initial --lang ${lang_es} --eval m36 --evt_coref_score_tab ${event_result_dir_es}/events_corefer_confidence.tab --source_tab ${parent_child_tab_path_es} --ent_vec_dir ${data_root_es}/merge/mention --ent_vec_files ${lang_es}.mention.hidden.txt --evt_vec_dir ${data_root_es}/merge/mention --evt_vec_files ${lang_es}.trigger.hidden.txt --event_embedding_from_file --freebase_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_grained_entity_type_path ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json --lorelei_link_mapping ${edl_output_dir_es}/lorelei_private_data.json --parent_child_tab_path ${parent_child_tab_path_es} &>> ${log};
 
             echo `date` - "END AIF converter" &>> ${log};
 
