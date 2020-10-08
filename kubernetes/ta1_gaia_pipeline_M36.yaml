@@ -768,9 +768,9 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
-## RU/ES dependency-based edl-nominal-conference-tabcs
+## RU dependency-based edl-nominal-conference-tabcs
 ################################
-      - name: edl-nominal-conference-ru-es
+      - name: edl-nominal-conference-ru
         image: dylandilu/chuck_coreference
         workingDir: /scr
         imagePullPolicy: IfNotPresent
@@ -784,20 +784,12 @@ spec:
           value: "/output/WORKING/data/ru/edl/ru.linking.tab"
         - name: edl_tab_final_ru
           value: "/output/WORKING/data/ru/edl/merged_final.tab"
-        #SPANISH
-        - name: udp_dir_es
-          value: "/output/WORKING/data/es/udp"
-        - name: edl_tab_link_es
-          value: "/output/WORKING/data/es/edl/es.linking.tab"
-        - name: edl_tab_final_es
-          value: "/output/WORKING/data/es/edl/merged_final.tab"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START edl-nominal-conference-ru **" &>> ${log};
             python appos_extract.py --udp_dir ${udp_dir_ru} --edl_tab_path ${edl_tab_link_ru} --path_out_coref ${edl_tab_final_ru} &>> ${log} &
-            # python appos_extract.py --udp_dir ${udp_dir_es} --edl_tab_path ${edl_tab_link_es} --path_out_coref ${edl_tab_final_es} &>> ${log} &
             wait &>> ${log};
             echo `date` - "END edl-nominal-conference-ru" &>> ${log};
 
