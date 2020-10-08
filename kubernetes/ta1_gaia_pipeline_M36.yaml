@@ -2102,7 +2102,6 @@ spec:
             find ${data_root_es} -name 'merged.cs' &>> ${log};
             find ${data_root_es} -name 'merged_final.tab' &>> ${log};
             find ${data_root_es} -name 'events_tme.cs' &>> ${log};
-#TODO: copy files for sentiment to /output/WORKING/uiuc_ttl_results/
 #TODO: copy files needed by CU, text mention results in /output/WORKING/uiuc_ttl_results
         volumeMounts:
           - name: input-efs
@@ -2349,44 +2348,6 @@ spec:
             echo `date` - "END CU Graph Merging" &>> ${log};
 # CU graph merging result path
 #merged_graph_path = working_path + 'cu_graph_merging_ttl/' + version_folder + 'merged_ttl_'+ p_f_run + '/'
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true #Input Volume for worker will be set to readOnly
-          - name: output-efs
-            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
-
-################################
-## Columbia University Sentiment
-################################
-## CU: Amith Ananthram
-## https://hub.docker.com/repository/docker/gaiaaida/sentiment
-## See https://github.com/isi-vista/aida-integration/#cu-sentiment
-
-      - name: cu-sentiment
-        image: gaiaaida/sentiment:0.2
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: parent_child_tab
-          value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
-        - name: UIUC_RESULTS_SHARED
-          value: "/output/WORKING/uiuc_ttl_results/"
-        - name: SENTIMENT_OUTPUT
-          value: "/output/WORKING/columbia_sentiment/"
-        - name: log
-          value: "/output/WORKING/full-text-log.txt"
-        command: ["/bin/bash", "-c"]
-        args:
-          - echo `date` - "** START CU Sentiment **" &>> ${log};
-            ls -ahl ${UIUC_RESULTS_SHARED};
-            mkdir -p ${SENTIMENT_OUTPUT};
-            cd /sentiment/src/full-system/;
-            . ./full_script.sh /sentiment/src &>> ${log};
-            ls -ahl ${SENTIMENT_OUTPUT} &>> ${log};
-            echo `date` - "END CU Sentiment" &>> ${log};
-# output should include en.multi_sent.sponsor_assignblame.cs
         volumeMounts:
           - name: input-efs
             mountPath: "/input"
