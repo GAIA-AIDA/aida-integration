@@ -946,8 +946,8 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START edl-nominal-coreference-es **" &>> ${log};
-            echo "Begin edl-nominal-coreference-es for "${edl_tab_link_es_es} &>> ${log};
-            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir_es}/${edl_tab_link_es_es} -edl_freebase ${edl_output_dir_es}/${edl_tab_link_fb_es} -l ${data_root_es_es}/ltf -o ${edl_output_dir_es}/merged_final.tab &>> ${log};
+            echo "Begin edl-nominal-coreference-es for "${edl_tab_link_es} &>> ${log};
+            /opt/conda/envs/aida_coreference/bin/python3.6 aida_coref.py -edl_official ${edl_output_dir_es}/${edl_tab_link_es} -edl_freebase ${edl_output_dir_es}/${edl_tab_link_fb_es} -l ${data_root_es}/ltf -o ${edl_output_dir_es}/merged_final.tab &>> ${log};
             echo `date` - "END edl-nominal-coreference-es" &>> ${log};
         volumeMounts:
           - name: input-efs
