@@ -931,7 +931,7 @@ spec:
         #   limits:
         #     nvidia.com/gpu: 1 # requesting 1 GPU
         workingDir: /app
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: data_root_es
           value: "/output/WORKING/data/es"
