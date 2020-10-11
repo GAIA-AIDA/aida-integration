@@ -196,13 +196,11 @@ spec:
 ## See https://github.com/isi-vista/aida-integration/#usc-object-detection
 
       - name: usc-object-detection
-        image: gaiaaida/detection-grounding:0.3
-        imagePullPolicy: IfNotPresent
+        image: gaiaaida/detection-grounding:0.4
+        imagePullPolicy: Always
         env:
         - name: parent_child_tab
           value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
         - name: INPUT
           value: "/input"
         - name: OUTPUT
@@ -211,7 +209,7 @@ spec:
           value: "/output/WORKING"
         - name: OBJDET_OUTPUT
           value: "/output/WORKING/usc-object-detection/"
-        - name: log_filename
+        - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
         args:
@@ -221,23 +219,30 @@ spec:
 # Each contains 4 files; 3 of them are about jpg, png, representative_frames,
 # and the last one just has all of them in one file.
 # this should only do the USC object detection, not the grounding.
-         - echo `date` - "** START USC Object Detection **" &>> ${log_filename};
+         - echo `date` - "** START USC Object Detection **" &>> ${log};
            mkdir -p /upload/USC_Vision_Data/m18_eval/;
            mkdir -p ${OBJDET_OUTPUT};
            mkdir -p /output/WORKING/data;
            cd /aida/src/;
-           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log_filename};
-           pwd &>> ${log_filename};
-           ls -ahl ./data &>> ${log_filename};
-           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log_filename};
-           find /upload/USC_Vision_Data/m18_eval -name '*.*'  &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log};
+           pwd &>> ${log};
+           ls -ahl ./data &>> ${log};
+           echo `date` - "aida_ds_creator" &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log};
+           find /upload/USC_Vision_Data/m18_eval -name '*.*' &>> ${log};
            cp /output/WORKING/data/op_imgs_aida_m18_eval_dict_for_proc.json /aida/src/data/aida_m18_eval;
            cd ./open_images_pfdet/;
-           /root/conda/envs/aida-env/bin/python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1" --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log_filename};
-           RESULTS=/upload/USC_Vision_Data/m18_eval;
-           ls -ahl ${RESULTS}  &>> ${log_filename};
-           ls -ahl /output/WORKING/data &>> ${log_filename};
-           cp -r ${RESULTS} ${OBJDET_OUTPUT} &>> ${log_filename};
+           echo `date` - "only_test" &>> ${log};
+           /root/conda/envs/aida-env/bin/python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1" --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log};
+           ls -ahl /upload/USC_Vision_Data/m18_eval  &>> ${log};
+           ls -ahl ${OBJDET_OUTPUT} &>> {log};
+           ls -ahl /output/WORKING/data &>> ${log};
+           cd ../;
+           echo `date` - "mrcnn_2_aida" &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/mrcnn_2_aida.py &>> ${log};
+           ls -ahl /upload/USC_Vision_Data/m18_eval  &>> ${log};
+           ls -ahl ${OBJDET_OUTPUT} &>> {log};
+           ls -ahl /output/WORKING/data &>> ${log};
            echo `date` - "END USC Object Detection" &>> ${log_filename};
 # TODO: confirm exact files copied out.
         volumeMounts:
@@ -2201,6 +2206,9 @@ spec:
 
       - name: cu-face-building
         image: gaiaaida/face-building:0.3
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
@@ -2228,11 +2236,12 @@ spec:
             ls -ahl /input/data/jpg/;
             ls -ahl /input/data/video_shot_boundaries/representative_frames/;
             mkdir -p ${FACE_OUTPUT};
-            /bin/bash -c ./full_script.sh/ &>> ${log};
-            ls -ahl /output/;
-            ls -ahl ${FACE_OUTPUT};
+            /bin/bash -c ./full_script.sh &>> ${log};
+            ls -ahl /output/ &>> ${log};
+            ls -ahl ${FACE_OUTPUT} &>> ${log};
             find . -name '*cu_object*' &>> ${log};
             out_ttl=working_path + 'cu_object_FFT_ttl/';
+            ls -ahl ${out_ttl} &>> ${log};
             echo `date` - "END CU Face, Flag, Landmark Detection" &>> ${log};
 
         volumeMounts:
@@ -2289,13 +2298,11 @@ spec:
 ## https://hub.docker.com/repository/docker/gaiaaida/detection-grounding
 ## See https://github.com/isi-vista/aida-integration#usc-grounding
       - name: usc-grounding
-        image: gaiaaida/detection-grounding:0.2
+        image: gaiaaida/detection-grounding:0.4
         imagePullPolicy: IfNotPresent
         env:
         - name: parent_child_tab
           value: "/input/docs/parent_children.tab"
-        - name: CUDA_VISIBLE_DEVICES
-          value: "0"
         - name: GRD_OUTPUT
           value: "/output/WORKING/usc-grounding/"
         - name: log
@@ -2306,8 +2313,17 @@ spec:
 # entity2mention_dict_E1.pickle
 # id2mentions_dict_E1.pickle
 # parent_children.sorted.tab
-# TODO: USC object detection already ran, so what parts can we skip here:
-         - echo `date` - "** START USC Object Detection and Grounding **" &>> ${log};
+# Grounding: 
+# First, we assume we have Columbia intermediate outputs. 
+# In particular, we need the id2mentions_dict_E1.pickle. 
+# Also, we should have sorted parent_children.tab In the data folder, see To_USC_E1 for an example.
+##python columbia_id2mentions_2_phrase_file.py --fin1=False 
+# This creates the file that the grounding system uses as input
+##python code/ground_naive.py 
+# This creates the grounding outputs
+##python columbia_id2mentions_2_phrase_file.py --fin1=True 
+#This creates the grounding outputs in the same format as Columbia
+         - echo `date` - "** START USC Grounding **" &>> ${log};
            echo "INPUT "${INPUT};
            echo "OUTPUT "${OUTPUT};
            echo "GRD_OUTPUT "${GRD_OUTPUT};
@@ -2316,21 +2332,14 @@ spec:
            mkdir -p ${GRD_OUTPUT};
            find /output/WORKING -name '*.pickle' &>> ${log};
            cd /aida/src/;
-           python ./code/smoke_test.py &>> ${log};
-           python ./code/aida_ds_creator.py &>> ${log};
-           cd ./open_images_pfdet/;
-           python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1"
-             --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted
-             --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True
-             --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log};
-           cd ../;
-           python ./code/mrcnn_2_aida.py &>> ${log};
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=False &>> ${log};
-           python ./code/ground_naive.py &>> ${log};
-           python ./code/columbia_idmentions_2_phrase_file.py --fin1=True &>> ${log};
-           find . -name 'uscvision_grounding_output_cu_format_E1.pickle &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/columbia_idmentions_2_phrase_file.py --fin1=False &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/ground_naive.py &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/columbia_idmentions_2_phrase_file.py --fin1=True &>> ${log};
+           find . -name 'uscvision_grounding_output_cu_format_E1.pickle' &>> ${log};
+           find . -name '*.pickle' &>> ${log};
            RESULTS=./uscvision_grounding_output_cu_format_E1.pickle;
            cp ${RESULTS} ${GRD_OUTPUT};
+           ls -ahl ${GRD_OUTPUT} &>> ${log};
            echo `date` - "END USC Object Detection and Grounding" &>> ${log};
 
 # RESULTS:  uscvision_grounding_output_cu_format_E1.pickle
