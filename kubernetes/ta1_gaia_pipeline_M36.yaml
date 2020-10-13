@@ -529,12 +529,38 @@ spec:
           value: "/output/WORKING/data/es/corenlp"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
+        - name: filter_py
+          value: "/stanford-corenlp-aida_0/filter.py"
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START apply Stanford corenlp **" &>> ${log};
-            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list} -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
-            java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_ru} -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
-            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_es} -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
+
+            echo "import xml.etree.ElementTree as ET" &>> ${filter_py};
+            echo "def filterfiles(full_list, shortlist):" &>> ${filter_py};
+            echo "  with open(full_list) as f:" &>> ${filter_py};
+            echo "    content = f.readlines()" &>> ${filter_py};
+            echo "  content = [x.strip() for x in content]" &>> ${filter_py};
+            echo "  with open(shortlist, 'w') as out_file:" &>> ${filter_py};
+            echo "    for xml_file in content:" &>> ${filter_py};
+            echo "      if len(xml_file) > 0:" &>> ${filter_py};
+            echo "        xml_text = ET.parse(xml_file);" &>> ${filter_py};
+            echo "        root=xml_text.getroot();" &>> ${filter_py};
+            echo "        max_len=0" &>> ${filter_py};
+            echo "        sent_count=0" &>> ${filter_py};
+            echo "        for ot in root.findall('./DOC/TEXT/SEG/ORIGINAL_TEXT'):" &>> ${filter_py};
+            echo "          max_len=max(max_len,len(ot.text))" &>> ${filter_py};
+            echo "          sent_count+=1" &>> ${filter_py};
+            echo "        if max_len < 1000 and sent_count < 1000:" &>> ${filter_py};
+            echo "          out_file.write(str(xml_file) + '\n')" &>> ${filter_py};
+            echo "filterfiles('/output/WORKING/data/en/rsd_lst', '/output/WORKING/data/en/rsd_lst_short')" &>> ${filter_py};
+            echo "filterfiles('/output/WORKING/data/ru/rsd_lst', '/output/WORKING/data/ru/rsd_lst_short')" &>> ${filter_py};
+            echo "filterfiles('/output/WORKING/data/es/rsd_lst', '/output/WORKING/data/es/rsd_lst_short')" &>> ${filter_py};
+
+            python3 filter.py &>> ${log};
+
+            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list}_short -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
+            java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_ru}_short -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
+            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_es}_short -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
             wait &>> ${log};
             echo `date` - "END apply Stanford corenlp" &>> ${log};
         volumeMounts:
