@@ -2583,8 +2583,11 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START CleanKB **" &>> ${log};
-            /aida-tools-java11/aida-eval-tools/target/appassembler/bin/cleanKB ${data_root}/cleankb.param
+            /aida-tools-java11/aida-eval-tools/target/appassembler/bin/cleanKB ${data_root}/cleankb.param &
             wait &>> ${log};
+            mkdir -p /output/NIST;
+            cp /output/WORKING/data/final_clean/*.ttl /output/NIST;
+            ls -ahl /output/NIST &>> ${log};
             echo `date` - "END CleanKB" &>> ${log};
 
         volumeMounts:
