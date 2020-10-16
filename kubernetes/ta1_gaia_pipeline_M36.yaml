@@ -454,8 +454,8 @@ spec:
             mkdir -p ${udp_dir};
             mkdir -p ${udp_dir_ru};
             mkdir -p ${udp_dir_es};
-            # python bio2udp.py --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
-            # echo "finish universal dependency parser for "${lang} &>> ${log};
+            python bio2udp.py --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
+            echo "finish universal dependency parser for "${lang} &>> ${log};
             # python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file} &>> ${log};
             # echo "finish chunking for "${lang} &>> ${log};
             python bio2udp.py --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru} &>> ${log};
@@ -1417,7 +1417,7 @@ spec:
 ################################
       - name: event-fine
         image: limanling/uiuc_ie_m36
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         #ENGLISH
         - name: lang
@@ -1431,7 +1431,7 @@ spec:
         - name: event_result_dir
           value: "/output/WORKING/data/en/event"
         - name: core_nlp_output_path
-          value: "/output/WORKING/data/en/corenlp"
+          value: "/output/WORKING/data/en/udp"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
@@ -1444,16 +1444,17 @@ spec:
             # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
             # echo `date` - "Completed new_event_framenet.py" &>> ${log};
             
-            # wait &>> ${log};
-            # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
-            # echo `date` - "Completed new_event_dependency.py" &>> ${log};
+            wait &>> ${log};
+            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
+            echo `date` - "Completed new_event_dependency.py" &>> ${log};
 
-            # wait &>> ${log};
+            wait &>> ${log};
+            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
             # /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
-            # echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
+            echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
             
             wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
+            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all_clean.cs_tmp ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs ${lang} &>> ${log};
             echo `date` - "END Completed rewrite-args" &>> ${log};
