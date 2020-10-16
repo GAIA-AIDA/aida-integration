@@ -2042,7 +2042,7 @@ spec:
 ################################
       - name: cleankb
         image: limanling/aida-tools
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         workingDir: /aida-tools-java11
         env:
         - name: data_root
