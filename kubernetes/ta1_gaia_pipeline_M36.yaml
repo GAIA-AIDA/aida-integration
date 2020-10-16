@@ -209,6 +209,8 @@ spec:
           value: "/output/WORKING/data/en/rsd_lst"
         - name: timetable_tab
           value: "/output/WORKING/data/en/time_table.tab"
+        - name: core_nlp_output_path
+          value: "/output/WORKING/data/en/corenlp"
         #RUSSIAN
         - name: ltf_source_ru
           value: "/output/WORKING/data/ru/ltf"
@@ -222,6 +224,8 @@ spec:
           value: "/output/WORKING/data/ru/rsd_lst"
         - name: timetable_tab_ru
           value: "/output/WORKING/data/ru/time_table.tab"
+        - name: core_nlp_output_path_ru
+          value: "/output/WORKING/data/ru/corenlp"
         #SPANISH
         - name: ltf_source_es
           value: "/output/WORKING/data/es/ltf"
@@ -235,6 +239,8 @@ spec:
           value: "/output/WORKING/data/es/rsd_lst"
         - name: timetable_tab_es
           value: "/output/WORKING/data/es/time_table.tab"
+        - name: core_nlp_output_path_es
+          value: "/output/WORKING/data/es/corenlp"
         - name: parent_child_tab
           value: "/input/docs/parent_children.tab"
         - name: sorted
@@ -262,6 +268,23 @@ spec:
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_es} ${rsd_file_list_es} &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_es} ${ltf_file_list_es} &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_es} &>> ${log};
+            
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source} ${rsd_source} ${data_root}/ltf_minibatch ${data_root}/rsd_minibatch 5 &>> ${log};
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source_ru} ${rsd_source_ru} ${data_root_ru}/ltf_minibatch ${data_root_ru}/rsd_minibatch 5 &>> ${log};
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source_es} ${rsd_source_es} ${data_root_es}/ltf_minibatch ${data_root_es}/rsd_minibatch 5 &>> ${log};
+            
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/0 ${data_root}/edl_minibatch/${lang}_0.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/1 ${data_root}/edl_minibatch/${lang}_1.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/2 ${data_root}/edl_minibatch/${lang}_2.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/3 ${data_root}/edl_minibatch/${lang}_3.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/4 ${data_root}/edl_minibatch/${lang}_4.bio &;
+
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/0 ${data_root}/rsd_minibatch/0_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/1 ${data_root}/rsd_minibatch/1_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/2 ${data_root}/rsd_minibatch/2_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/3 ${data_root}/rsd_minibatch/3_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/4 ${data_root}/rsd_minibatch/4_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+
             echo `date` - "END generate bio list" &>> ${log};
 
         volumeMounts:
@@ -271,32 +294,32 @@ spec:
           - name: output-efs
             mountPath: "/output"
 
-################################
-## timetable-tab
-################################
-      - name: timetable-tab
-        image: limanling/uiuc_ie_m36
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: parent_child_tab
-          value: "/input/docs/parent_children.tab"
-        - name: sorted
-          value: "0"
-        - name: timetable_tab
-          value: "/output/WORKING/data/en/time_table.tab"
-        - name: log
-          value: "/output/WORKING/full-text-log.txt"
-        command: ["/bin/bash", "-c"]
-        args:
-          - echo `date` - "** START timetable tab **" &>> ${log};
-            /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab} &>> ${log};
-            echo `date` - "END timetable tab" &>> ${log};
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true
-          - name: output-efs
-            mountPath: "/output"
+# ################################
+# ## timetable-tab
+# ################################
+#       - name: timetable-tab
+#         image: limanling/uiuc_ie_m36
+#         imagePullPolicy: IfNotPresent
+#         env:
+#         - name: parent_child_tab
+#           value: "/input/docs/parent_children.tab"
+#         - name: sorted
+#           value: "0"
+#         - name: timetable_tab
+#           value: "/output/WORKING/data/en/time_table.tab"
+#         - name: log
+#           value: "/output/WORKING/full-text-log.txt"
+#         command: ["/bin/bash", "-c"]
+#         args:
+#           - echo `date` - "** START timetable tab **" &>> ${log};
+#             /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab} &>> ${log};
+#             echo `date` - "END timetable tab" &>> ${log};
+#         volumeMounts:
+#           - name: input-efs
+#             mountPath: "/input"
+#             readOnly: true
+#           - name: output-efs
+#             mountPath: "/output"
 
 ################################
 ## apply-stanford-corenlp
@@ -304,7 +327,7 @@ spec:
       - name: apply-stanford-corenlp
         image: limanling/aida-tools
         workingDir: /stanford-corenlp-aida_0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         #ENGLISH
         - name: lang
@@ -341,32 +364,32 @@ spec:
         args:
           - echo `date` - "** START apply Stanford corenlp **" &>> ${log};
 
-            echo "import xml.etree.ElementTree as ET" &>> ${filter_py};
-            echo "def filterfiles(full_list, shortlist):" &>> ${filter_py};
-            echo "  with open(full_list) as f:" &>> ${filter_py};
-            echo "    content = f.readlines()" &>> ${filter_py};
-            echo "  content = [x.strip() for x in content]" &>> ${filter_py};
-            echo "  with open(shortlist, 'w') as out_file:" &>> ${filter_py};
-            echo "    for xml_file in content:" &>> ${filter_py};
-            echo "      if len(xml_file) > 0:" &>> ${filter_py};
-            echo "        xml_text = ET.parse(xml_file);" &>> ${filter_py};
-            echo "        root=xml_text.getroot();" &>> ${filter_py};
-            echo "        max_len=0" &>> ${filter_py};
-            echo "        sent_count=0" &>> ${filter_py};
-            echo "        for ot in root.findall('./DOC/TEXT/SEG/ORIGINAL_TEXT'):" &>> ${filter_py};
-            echo "          max_len=max(max_len,len(ot.text))" &>> ${filter_py};
-            echo "          sent_count+=1" &>> ${filter_py};
-            echo "        if max_len < 1000 and sent_count < 1000:" &>> ${filter_py};
-            echo "          out_file.write(str(xml_file) + '\n')" &>> ${filter_py};
-            echo "filterfiles('/output/WORKING/data/en/rsd_lst', '/output/WORKING/data/en/rsd_lst_short')" &>> ${filter_py};
-            echo "filterfiles('/output/WORKING/data/ru/rsd_lst', '/output/WORKING/data/ru/rsd_lst_short')" &>> ${filter_py};
-            echo "filterfiles('/output/WORKING/data/es/rsd_lst', '/output/WORKING/data/es/rsd_lst_short')" &>> ${filter_py};
+            # echo "import xml.etree.ElementTree as ET" &>> ${filter_py};
+            # echo "def filterfiles(full_list, shortlist):" &>> ${filter_py};
+            # echo "  with open(full_list) as f:" &>> ${filter_py};
+            # echo "    content = f.readlines()" &>> ${filter_py};
+            # echo "  content = [x.strip() for x in content]" &>> ${filter_py};
+            # echo "  with open(shortlist, 'w') as out_file:" &>> ${filter_py};
+            # echo "    for xml_file in content:" &>> ${filter_py};
+            # echo "      if len(xml_file) > 0:" &>> ${filter_py};
+            # echo "        xml_text = ET.parse(xml_file);" &>> ${filter_py};
+            # echo "        root=xml_text.getroot();" &>> ${filter_py};
+            # echo "        max_len=0" &>> ${filter_py};
+            # echo "        sent_count=0" &>> ${filter_py};
+            # echo "        for ot in root.findall('./DOC/TEXT/SEG/ORIGINAL_TEXT'):" &>> ${filter_py};
+            # echo "          max_len=max(max_len,len(ot.text))" &>> ${filter_py};
+            # echo "          sent_count+=1" &>> ${filter_py};
+            # echo "        if max_len < 1000 and sent_count < 1000:" &>> ${filter_py};
+            # echo "          out_file.write(str(xml_file) + '\n')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/en/rsd_lst', '/output/WORKING/data/en/rsd_lst_short')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/ru/rsd_lst', '/output/WORKING/data/ru/rsd_lst_short')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/es/rsd_lst', '/output/WORKING/data/es/rsd_lst_short')" &>> ${filter_py};
 
-            python3 filter.py &>> ${log};
-
-            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list}_short -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
-            java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_ru}_short -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
-            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,cleanxml,ssplit,pos,lemma,ner,depparse,entitymentions,parse' -outputFormat json -filelist ${rsd_file_list_es}_short -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
+            # python3 filter.py &>> ${log};
+            
+            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list} -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
+            java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list_ru} -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
+            java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list_es} -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
             wait &>> ${log};
             echo `date` - "END apply Stanford corenlp" &>> ${log};
         volumeMounts:
@@ -431,18 +454,18 @@ spec:
             mkdir -p ${udp_dir};
             mkdir -p ${udp_dir_ru};
             mkdir -p ${udp_dir_es};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path} --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
-            echo "finish universal dependency parser for "${lang} &>> ${log};
-            python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file} &>> ${log};
-            echo "finish chunking for "${lang} &>> ${log};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path_ru} --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru} &>> ${log};
+            # python bio2udp.py --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
+            # echo "finish universal dependency parser for "${lang} &>> ${log};
+            # python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file} &>> ${log};
+            # echo "finish chunking for "${lang} &>> ${log};
+            python bio2udp.py --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru} &>> ${log};
             echo "finish universal dependency parser for "${lang_ru} &>> ${log};
             python chunk_mine.py --udp_dir ${udp_dir_ru} --text_dir ${rsd_source_ru} --path_out_chunk ${chunk_file_ru} &>> ${log};
             echo "finish chunking for "${lang_ru} &>> ${log};
-            python bio2udp.py --corenlp_dir ${core_nlp_output_path_es} --lang ${lang_es} --path_bio ${edl_bio_es} --udp_dir ${udp_dir_es} &>> ${log};
-            echo "finish universal dependency parser for "${lang_es} &>> ${log};
-            python chunk_mine.py --udp_dir ${udp_dir_es} --text_dir ${rsd_source_es} --path_out_chunk ${chunk_file_es} &>> ${log};
-            echo "finish chunking for "${lang_es} &>> ${log};
+            # python bio2udp.py --lang ${lang_es} --path_bio ${edl_bio_es} --udp_dir ${udp_dir_es} &>> ${log};
+            # echo "finish universal dependency parser for "${lang_es} &>> ${log};
+            # python chunk_mine.py --udp_dir ${udp_dir_es} --text_dir ${rsd_source_es} --path_out_chunk ${chunk_file_es} &>> ${log};
+            # echo "finish chunking for "${lang_es} &>> ${log};
             echo `date` - "END universal dependency parser chunk" &>> ${log};
         volumeMounts:
           - name: input-efs
@@ -451,103 +474,103 @@ spec:
           - name: output-efs
             mountPath: "/output"
 
-################################
-## process-framenet-generate
-################################
-      - name: process-framenet-generate
-        image: limanling/uiuc_ie_m36
-        imagePullPolicy: IfNotPresent
-        env:
-        #ENGLISH
-        - name: lang
-          value: "en"
-        - name: ltf_source
-          value: "/output/WORKING/data/en/ltf"
-        - name: ltf_txt_path
-          value: "/output/WORKING/data/en/event/ltf_txt"
-        - name: framenet_path
-          value: "/output/WORKING/data/en/event/framenet_res"
-        #RUSSIAN
-        - name: lang_ru
-          value: "ru"
-        - name: ltf_source_ru
-          value: "/output/WORKING/data/ru/ltf"
-        - name: ltf_txt_path_ru
-          value: "/output/WORKING/data/ru/event/ltf_txt"
-        - name: framenet_path_ru
-          value: "/output/WORKING/data/ru/event/framenet_res"
-        #SPANISH
-        - name: lang_es
-          value: "es"
-        - name: ltf_source_es
-          value: "/output/WORKING/data/es/ltf"
-        - name: ltf_txt_path_es
-          value: "/output/WORKING/data/es/event/ltf_txt"
-        - name: framenet_path_es
-          value: "/output/WORKING/data/es/event/framenet_res"
-        - name: log
-          value: "/output/WORKING/full-text-log.txt"
-        command: ["/bin/bash", "-c"]
-        args:
-          - echo `date` - "** START process-framenet-generate **" &>> ${log};
-            mkdir -p /output/WORKING/data/en/event;
-            mkdir -p /output/WORKING/data/ru/event;
-            mkdir -p /output/WORKING/data/es/event;
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang} ${ltf_source} ${ltf_txt_path} ${framenet_path} &
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_ru} ${ltf_source_ru} ${ltf_txt_path_ru} ${framenet_path_ru} &
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_es} ${ltf_source_es} ${ltf_txt_path_es} ${framenet_path_es} &
-            wait &>> ${log};
-            echo `date` - "END Process Framenet Generate" &>> ${log};
+# ################################
+# ## process-framenet-generate
+# ################################
+#       - name: process-framenet-generate
+#         image: limanling/uiuc_ie_m36
+#         imagePullPolicy: IfNotPresent
+#         env:
+#         #ENGLISH
+#         - name: lang
+#           value: "en"
+#         - name: ltf_source
+#           value: "/output/WORKING/data/en/ltf"
+#         - name: ltf_txt_path
+#           value: "/output/WORKING/data/en/event/ltf_txt"
+#         - name: framenet_path
+#           value: "/output/WORKING/data/en/event/framenet_res"
+#         #RUSSIAN
+#         - name: lang_ru
+#           value: "ru"
+#         - name: ltf_source_ru
+#           value: "/output/WORKING/data/ru/ltf"
+#         - name: ltf_txt_path_ru
+#           value: "/output/WORKING/data/ru/event/ltf_txt"
+#         - name: framenet_path_ru
+#           value: "/output/WORKING/data/ru/event/framenet_res"
+#         #SPANISH
+#         - name: lang_es
+#           value: "es"
+#         - name: ltf_source_es
+#           value: "/output/WORKING/data/es/ltf"
+#         - name: ltf_txt_path_es
+#           value: "/output/WORKING/data/es/event/ltf_txt"
+#         - name: framenet_path_es
+#           value: "/output/WORKING/data/es/event/framenet_res"
+#         - name: log
+#           value: "/output/WORKING/full-text-log.txt"
+#         command: ["/bin/bash", "-c"]
+#         args:
+#           - echo `date` - "** START process-framenet-generate **" &>> ${log};
+#             mkdir -p /output/WORKING/data/en/event;
+#             mkdir -p /output/WORKING/data/ru/event;
+#             mkdir -p /output/WORKING/data/es/event;
+#             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang} ${ltf_source} ${ltf_txt_path} ${framenet_path} &
+#             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_ru} ${ltf_source_ru} ${ltf_txt_path_ru} ${framenet_path_ru} &
+#             /opt/conda/envs/py36/bin/python /event/aida_event/framenet/generate_framenet.py ${lang_es} ${ltf_source_es} ${ltf_txt_path_es} ${framenet_path_es} &
+#             wait &>> ${log};
+#             echo `date` - "END Process Framenet Generate" &>> ${log};
 
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true
-          - name: output-efs
-            mountPath: "/output"
+#         volumeMounts:
+#           - name: input-efs
+#             mountPath: "/input"
+#             readOnly: true
+#           - name: output-efs
+#             mountPath: "/output"
 
-################################
-## run-semafor
-################################
-      - name: run-semafor
-        image: limanling/aida-tools
-        imagePullPolicy: IfNotPresent
-        env:
-        #ENGLISH
-        - name: ltf_txt_path
-          value: "/output/WORKING/data/en/event/ltf_txt"
-        - name: framenet_path
-          value: "/output/WORKING/data/en/event/framenet_res"
-        #RUSSIAN
-        - name: ltf_txt_path_ru
-          value: "/output/WORKING/data/ru/event/ltf_txt"
-        - name: framenet_path_ru
-          value: "/output/WORKING/data/ru/event/framenet_res"
-        #SPANISH
-        - name: ltf_txt_path_es
-          value: "/output/WORKING/data/es/event/ltf_txt"
-        - name: framenet_path_es
-          value: "/output/WORKING/data/es/event/framenet_res"
-        #ALL
-        - name: thread_num
-          value: "3"
-        - name: log
-          value: "/output/WORKING/full-text-log.txt"
-        command: ["/bin/bash", "-c"]
-        args:
-          - echo `date` - "** START Run Semafor **" &>> ${log};
-            /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
-            /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_ru} ${framenet_path_ru} ${thread_num} &
-            /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_es} ${framenet_path_es} ${thread_num} &
-            wait &>> ${log};
-            echo `date` - "END Run Semafor" &>> ${log};
+# ################################
+# ## run-semafor
+# ################################
+#       - name: run-semafor
+#         image: limanling/aida-tools
+#         imagePullPolicy: IfNotPresent
+#         env:
+#         #ENGLISH
+#         - name: ltf_txt_path
+#           value: "/output/WORKING/data/en/event/ltf_txt"
+#         - name: framenet_path
+#           value: "/output/WORKING/data/en/event/framenet_res"
+#         #RUSSIAN
+#         - name: ltf_txt_path_ru
+#           value: "/output/WORKING/data/ru/event/ltf_txt"
+#         - name: framenet_path_ru
+#           value: "/output/WORKING/data/ru/event/framenet_res"
+#         #SPANISH
+#         - name: ltf_txt_path_es
+#           value: "/output/WORKING/data/es/event/ltf_txt"
+#         - name: framenet_path_es
+#           value: "/output/WORKING/data/es/event/framenet_res"
+#         #ALL
+#         - name: thread_num
+#           value: "3"
+#         - name: log
+#           value: "/output/WORKING/full-text-log.txt"
+#         command: ["/bin/bash", "-c"]
+#         args:
+#           - echo `date` - "** START Run Semafor **" &>> ${log};
+#             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path} ${framenet_path} ${thread_num} &
+#             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_ru} ${framenet_path_ru} ${thread_num} &
+#             /semafor/bin/runSemafor_dir.sh ${ltf_txt_path_es} ${framenet_path_es} ${thread_num} &
+#             wait &>> ${log};
+#             echo `date` - "END Run Semafor" &>> ${log};
 
-        volumeMounts:
-          - name: input-efs
-            mountPath: "/input"
-            readOnly: true
-          - name: output-efs
-            mountPath: "/output"
+#         volumeMounts:
+#           - name: input-efs
+#             mountPath: "/input"
+#             readOnly: true
+#           - name: output-efs
+#             mountPath: "/output"
 
 ################################
 ## OneIE
@@ -907,9 +930,8 @@ spec:
 ################################
 
       - name: filler-extract-new-relation
-        image: dylandilu/filler
+        image: limanling/uiuc_ie_m36
         imagePullPolicy: IfNotPresent
-        workingDir: /scr
         env:
         #ENGLISH
         - name: lang
@@ -961,9 +983,9 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START filler extraction and new relation **" &>> ${log};
-            python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path} --ltf_dir ${ltf_source} --edl_path ${edl_output_dir}/merged.cs --text_dir ${rsd_source} --path_relation ${new_relation_coarse} --path_filler ${filler_coarse} --lang ${lang} &
-            python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_ru} --ltf_dir ${ltf_source_ru} --edl_path ${edl_output_dir_ru}/merged.cs --text_dir ${rsd_source_ru} --path_relation ${new_relation_coarse_ru} --path_filler ${filler_coarse_ru} --lang ${lang_ru} &
-            python extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_es} --ltf_dir ${ltf_source_es} --edl_path ${edl_output_dir_es}/merged.cs --text_dir ${rsd_source_es} --path_relation ${new_relation_coarse_es} --path_filler ${filler_coarse_es} --lang ${lang_es} &
+            /opt/conda/envs/py36/bin/python /entity/aida_filler/extract_filler_relation.py --corenlp_dir ${core_nlp_output_path} --ltf_dir ${ltf_source} --edl_path ${edl_output_dir}/merged.cs --text_dir ${rsd_source} --path_relation ${new_relation_coarse} --path_filler ${filler_coarse} --lang ${lang} &
+            /opt/conda/envs/py36/bin/python /entity/aida_filler/extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_ru} --ltf_dir ${ltf_source_ru} --edl_path ${edl_output_dir_ru}/merged.cs --text_dir ${rsd_source_ru} --path_relation ${new_relation_coarse_ru} --path_filler ${filler_coarse_ru} --lang ${lang_ru} &
+            /opt/conda/envs/py36/bin/python /entity/aida_filler/extract_filler_relation.py --corenlp_dir ${core_nlp_output_path_es} --ltf_dir ${ltf_source_es} --edl_path ${edl_output_dir_es}/merged.cs --text_dir ${rsd_source_es} --path_relation ${new_relation_coarse_es} --path_filler ${filler_coarse_es} --lang ${lang_es} &
             wait &>> ${log};
             echo `date` - "END filler extraction and new relation" &>> ${log};
 
@@ -1418,20 +1440,20 @@ spec:
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py ${lang} ${ltf_source} ${edl_output_dir}/${lang}.linking.freebase.fine.json ${edl_output_dir}/${lang}.linking.freebase.tab ${edl_output_dir}/merged.cs ${event_result_dir}/event_rewrite.cs ${event_result_dir}/events_fine.cs --filler_coarse ${edl_output_dir}/filler_${lang}.cs --entity_finegrain_aida ${edl_output_dir}/merged_all_fine.cs &>> ${log};
             echo "Event rule-based" &>> ${log};
 
-            wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
-            echo `date` - "Completed new_event_framenet.py" &>> ${log};
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
+            # echo `date` - "Completed new_event_framenet.py" &>> ${log};
             
-            wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
-            echo `date` - "Completed new_event_dependency.py" &>> ${log};
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
+            # echo `date` - "Completed new_event_dependency.py" &>> ${log};
 
-            wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
-            echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
+            # echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
             
             wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
+            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all_clean.cs_tmp ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs ${lang} &>> ${log};
             echo `date` - "END Completed rewrite-args" &>> ${log};
@@ -2074,7 +2096,7 @@ spec:
 ################################
       - name: cleankb
         image: limanling/aida-tools
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         workingDir: /aida-tools-java11
         env:
         - name: data_root
