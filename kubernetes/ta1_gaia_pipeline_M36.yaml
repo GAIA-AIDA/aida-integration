@@ -11,24 +11,16 @@ spec:
       volumes:
         - name: input-efs
           nfs:
-            server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL
+            server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL # THIS IS REPLACED BY LEADERBOARD PIPELINE
             path: /
         - name: output-efs
           nfs:
-            server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t
+            server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # # THIS IS REPLACED BY LEADERBOARD PIPELINE
             path: /
         - name: refkb-efs
           nfs:
-            server: fs-dacc6a58.efs.us-east-1.amazonaws.com #m36-dryrun-refkb-efs (fs-dacc6a58) - sudo mount -t efs -o tls fs-dacc6a58:/ efs
+            server: fs-aa462d28.efs.us-east-1.amazonaws.com #m36-eval-refkb-LDC2020R20 (fs-aa462d28) - sudo mount -t efs -o tls fs-aa462d28:/ efs
             path: /
-        #If you want to use a local folder as a volume, you can remove the NFS above and recreate them with a local volume for testing. The names need to match with the volumeMounts of the container
-        # - name: input-efs
-          # hostPath:
-          # path: "C:/some/local/input"
-        # - name: output-efs
-          # hostPath:
-          # path: "C:/some/local/output"
-
       initContainers:
 ###############################
 # Mongo DB Imports
@@ -537,7 +529,7 @@ spec:
         image: limteng/oneie_aida_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: Always
         workingDir: /oneie
         env:
@@ -587,7 +579,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -707,7 +699,7 @@ spec:
         image: laituan245/spanbert_entity_coref
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
@@ -742,7 +734,7 @@ spec:
         image: laituan245/es_spanbert_entity_coref
         # resources:
         #   limits:
-        #     nvidia.com/gpu: 1 # requesting 1 GPU
+        #     nvidia.com/gpu: 4 # requesting 1 GPU
         workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
@@ -1018,8 +1010,8 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
-        imagePullPolicy: IfNotPresent
+            nvidia.com/gpu: 4 # requesting 1 GPU
+        imagePullPolicy: Always
         env:
         #ENGLISH
         - name: lang
@@ -1071,6 +1063,7 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START relation extraction fine (Part 1) **" &>> ${log};
+            /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang_es} --ltf_dir ${ltf_source_es} --rsd_dir ${rsd_source_es} --cs_fnames ${edl_output_dir_es}/merged.cs ${edl_output_dir_es}/filler_${lang_es}_all.cs ${relation_result_dir_es}/${lang_es}.rel.cs ${relation_result_dir_es}/new_relation_${lang_es}.cs ${event_result_dir_es}/event_rewrite.cs  --fine_ent_type_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json --outdir ${relation_result_dir_es} --fine_grained &>> ${log};
@@ -1089,10 +1082,10 @@ spec:
 ################################
       - name: relation-extraction-event-time
         image: wenhycs/uiuc_event_time
-        resources:
-          limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
-        imagePullPolicy: IfNotPresent
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 4 # requesting 1 GPU
+        imagePullPolicy: Always
         workingDir: /EventTimeArg
         env:
         - name: parent_child_tab_path
@@ -1135,7 +1128,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1220,7 +1213,7 @@ spec:
         image: panx27/aida20_mention
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1294,7 +1287,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1370,7 +1363,7 @@ spec:
 ################################
       - name: event-fine
         image: limanling/uiuc_ie_m36
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
         - name: lang
@@ -1484,8 +1477,8 @@ spec:
         image: laituan245/spanbert_coref
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
-        imagePullPolicy: IfNotPresent
+            nvidia.com/gpu: 4 # requesting 1 GPU
+        imagePullPolicy: Always
         env:
         #ENGLISH
         - name: lang
@@ -1534,7 +1527,7 @@ spec:
         image: laituan245/es_event_coref
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         # #ENGLISH
@@ -1641,10 +1634,10 @@ spec:
 ################################
       - name: temporal-4-tuple
         image: wenhycs/uiuc_event_time
-        resources:
-          limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
-        imagePullPolicy: IfNotPresent
+        # resources:
+        #   limits:
+        #     nvidia.com/gpu: 4 # requesting 1 GPU
+        imagePullPolicy: Always
         workingDir: /EventTimeArg
         env:
         #ENGLISH
@@ -1757,7 +1750,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 1 # requesting 1 GPU
+            nvidia.com/gpu: 4 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1997,14 +1990,6 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 
-      restartPolicy: Never
-
-################################
-## containers:
-################################
-      containers:
-
-
 ################################
 ## CleanKB preparation
 ################################
@@ -2037,6 +2022,13 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
+      restartPolicy: Never
+
+################################
+## containers:
+################################
+      containers:
+
 ################################
 ## CleanKB
 ################################
@@ -2065,8 +2057,6 @@ spec:
             readOnly: true
           - name: output-efs
             mountPath: "/output"
-
-
 
       imagePullSecrets:
         - name: regcred
