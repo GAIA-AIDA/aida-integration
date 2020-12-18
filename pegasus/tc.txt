@@ -1,0 +1,49 @@
+# This is the transformation catalog. It lists information about each of the
+# executables that are used by the workflow.
+
+tr preprocess {
+    site saga {
+        pfn "${PWD}/bin/preprocess"
+        arch "x86_64"
+        os "LINUX"
+        type "INSTALLED"
+
+        profile pegasus "cores" "1"
+        profile pegasus "nodes" "1"
+    }
+}
+
+tr findrange {
+    site saga {
+        pfn "${PWD}/bin/findrange"
+        arch "x86_64"
+        os "LINUX"
+        type "INSTALLED"
+        profile pegasus "cores" "1"
+        profile pegasus "nodes" "1"
+    }
+}
+
+tr analyze {
+    site saga {
+        pfn "${PWD}/bin/analyze"
+        arch "x86_64"
+        os "LINUX"
+        type "INSTALLED"
+        profile pegasus "cores" "1"
+        profile pegasus "nodes" "1"
+    }
+}
+
+tr pegasus::mpiexec {
+  site saga {
+    profile pegasus "cores" "48"
+    profile pegasus "nodes" "1"
+    profile pegasus "runtime" "3600"
+    profile pegasus "change.dir" "true"
+    pfn "${PWD}/bin/pmc-wrapper"
+    type "INSTALLED"
+  }
+}
+
+
