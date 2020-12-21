@@ -14,3 +14,8 @@ $ conda activate aida-pegasus
   warnings.warn(
 <module 'Pegasus.DAX3' from '/nas/home/napiersk/miniconda3/envs/aida-pegasus/lib/python3.8/site-packages/Pegasus/DAX3.py'>
 ```
+
+# Generate and Submit a Workflow
+```
+(aida-pegasus) $ . ./submit.sh
+```
