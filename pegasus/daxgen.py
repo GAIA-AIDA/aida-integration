@@ -34,6 +34,30 @@ preprocess.uses(b2, link=Link.OUTPUT, transfer=False, register=False)
 preprocess.addProfile(Profile("pegasus", "label", "cluster-1"))
 diamond.addJob(preprocess)
 
+
+# Create and add containers to the TransformationCatalog.
+#tc = TransformationCatalog()
+
+# A container that will be used to execute the following transformations.
+#tools_container = Container(
+#                  "tools-container",
+#                  Container.DOCKER,
+#                  image="docker:///ryantanaka/preprocess:latest",
+#                  arguments="--shm-size=2g",
+#                  bypass_staging=True
+#               )
+
+# Add the container to the TransformationCatalog
+#tc.add_containers(tools_container)
+
+#preprocess = Transformation(
+#               "preprocess",
+#               site="condorpool",
+#               pfn="/usr/local/bin/preprocess.sh",
+#               is_stageable=False,
+#               container=tools_container
+#            )
+
 # Add left Findrange job
 #print("Adding left Findrange job...")
 #frl = Job(name="findrange")
