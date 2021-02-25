@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitecatalog xmlns="http://pegasus.isi.edu/schema/sitecatalog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pegasus.isi.edu/schema/sitecatalog http://pegasus.isi.edu/schema/sc-4.1.xsd" version="4.1">
+
+    <!-- The local site contains information about the submit host -->
+    <site handle="local" arch="x86_64" os="LINUX">
+        <!-- This is where intermediate data will be stored -->
+        <directory type="shared-scratch" path="${HOME}/workflows/scratch">
+            <file-server operation="all" url="file://${HOME}/workflows/scratch"/>
+        </directory>
+        <!-- This is where output data will be stored -->
+        <directory type="shared-storage" path="${HOME}/workflows/output">
+            <file-server operation="all" url="file://${HOME}/workflows/output"/>
+        </directory>
+    </site>
+
+    <site handle="saga" arch="x86_64" os="LINUX">
+
+         <!-- Scratch directory on the cluster -->
+        <directory type="shared-scratch" path="${HOME}/workflows/shared-scratch">
+            <file-server operation="all" url="file://${HOME}/workflows/shared-scratch"/>
+        </directory>
+
+        <profile namespace="env" key="PEGASUS_HOME">/nas/home/rynge/software/pegasus-4.9.3</profile>
+
+        <profile namespace="pegasus" key="style">glite</profile>
+
+        <!--  batch queue to submit jobs to - both are required -->
+        <profile namespace="pegasus" key="queue">gaia</profile>
+	<profile namespace="pegasus" key="glite.arguments">--nodelist saga31</profile>
+
+	<!--- This tells pegasus to have the auxillary jobs run on submit host 
+	      and not go through the local scheduler queue -->
+	<profile namespace="pegasus" key="auxillary.local">true</profile>
+
+	<!-- Scheduler to use. It can be 'pbs' or 'sge' -->
+        <profile namespace="condor" key="grid_resource">batch slurm</profile>
+
+        <!-- Wall clock limit -->
+        <profile namespace="pegasus" key="runtime">14400</profile>
+
+        <!-- profile namespace="pegasus" key="job.aggregator">mpiexec</profile -->
+        <!-- This profile tells Pegasus to create two clustered jobs
+            per level of the workflow, when horizontal clustering is
+            enabled -->
+	<!-- profile namespace="pegasus" key="clusters.num" >2</profile -->
+    </site>
+
+
+</sitecatalog>
