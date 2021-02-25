@@ -15,25 +15,24 @@ USER = pwd.getpwuid(os.getuid())[0]
 
 # Create a abstract dag
 print("Creating ADAG...")
-diamond = ADAG("diamond")
+simple = ADAG("simple")
 
 # Add some workflow-level metadata
-diamond.metadata("creator", "%s@%s" % (USER, os.uname()[1]))
-diamond.metadata("created", time.ctime())
+simple.metadata("creator", "%s@%s" % (USER, os.uname()[1]))
+simple.metadata("created", time.ctime())
 
-# Add a preprocess job
-print("Adding preprocess job...")
-preprocess = Job(name="preprocess")
-a = File("f.a")
-b1 = File("f.b1")
-b2 = File("f.b2")
-preprocess.addArguments("-i",a,"-o",b1,"-o",b2)
-preprocess.uses(a, link=Link.INPUT)
-preprocess.uses(b1, link=Link.OUTPUT, transfer=False, register=False)
-preprocess.uses(b2, link=Link.OUTPUT, transfer=False, register=False)
-preprocess.addProfile(Profile("pegasus", "label", "cluster-1"))
-diamond.addJob(preprocess)
-
+# Add a onejob job
+print("Adding onejob job...")
+onejob = Job(name="onejob")
+#a = File("f.a")
+#b1 = File("f.b1")
+#b2 = File("f.b2")
+#preprocess.addArguments("-i",a,"-o",b1,"-o",b2)
+#preprocess.uses(a, link=Link.INPUT)
+#preprocess.uses(b1, link=Link.OUTPUT, transfer=False, register=False)
+#preprocess.uses(b2, link=Link.OUTPUT, transfer=False, register=False)
+#preprocess.addProfile(Profile("pegasus", "label", "cluster-1"))
+simple.addJob(onejob)
 
 # Create and add containers to the TransformationCatalog.
 #tc = TransformationCatalog()
@@ -99,5 +98,5 @@ diamond.addJob(preprocess)
 # Write the DAX to stdout
 print("Writing %s" % daxfile)
 f = open(daxfile, "w")
-diamond.writeXML(f)
+simple.writeXML(f)
 f.close()
