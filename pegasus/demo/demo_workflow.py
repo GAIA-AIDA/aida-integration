@@ -42,8 +42,8 @@ py36_container = Container(
             Container.DOCKER,
             image="/nas/gaia/users/napiersk/archives/docker/python-3-6-3.tar",
             image_site="saga",
-#            bypass_staging=False,
-# ?other args: arguments, mounts, checksum, metadata, bypass_staging
+            bypass_staging=True,
+# ?other args: arguments, mounts, checksum, metadata
 # ?/scratch/demo.out
         )
 
