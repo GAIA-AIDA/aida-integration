@@ -41,11 +41,11 @@ py36_container = Container(
             "python36",
             Container.DOCKER,
             image="/nas/gaia/users/napiersk/archives/docker/python-3-6-3.tar",
-            image_site="saga"
+            image_site="saga",
+#            bypass_staging=False,
 # ?other args: arguments, mounts, checksum, metadata, bypass_staging
+# ?/scratch/demo.out
         )
-
-#saga31_request = {"run_on_single_node": "saga31", "partition": "gaia"}
 
 tc = TransformationCatalog().add_containers(py36_container)
 
@@ -54,8 +54,7 @@ py36_version = Transformation(
              pfn="/usr/local/bin/python",
              site="saga",
              container=py36_container,
-# TODO: need to add resource request:?  resource_request=saga31_request,
-# needed? type="INSTALLED",
+             is_stageable=False,
 )             
 
 tc = tc.add_transformations(py36_version)
@@ -67,7 +66,7 @@ Workflow("demo", infer_dependencies=True)\
     .add_transformation_catalog(tc)\
     .add_jobs(Job(py36_version)\
         .add_args(" -V")\
-        .set_stdout("demo.out")\
+        .set_stdout("/scratch/demo.out", stage_out=True, register_replica=False)\
         .add_pegasus_profile(\
             runtime=1440,\
             queue="gaia",\
