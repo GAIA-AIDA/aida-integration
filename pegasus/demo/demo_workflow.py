@@ -45,7 +45,7 @@ py36_container = Container(
 # ?other args: arguments, mounts, checksum, metadata, bypass_staging
         )
 
-saga31_request = {"run_on_single_node": "saga31", "partition": "gaia"}
+#saga31_request = {"run_on_single_node": "saga31", "partition": "gaia"}
 
 tc = TransformationCatalog().add_containers(py36_container)
 
@@ -60,17 +60,20 @@ py36_version = Transformation(
 
 tc = tc.add_transformations(py36_version)
 
-Workflow("demo", infer_dependencies=True, partition="scavenge")\
+slurm_resource_content = " --nodelist=saga31"
+
+Workflow("demo", infer_dependencies=True)\
     .add_site_catalog(sc)\
     .add_transformation_catalog(tc)\
-    .add_jobs(Job(py36_version).add_args(" -V").set_stdout("demo.out"))\
-# TODO:         job.add_pegasus_profile(
-#            runtime=self.job_time_in_minutes,
-#            queue=str(self.partition.name),
-#            project=None
-#            if self.partition.name in (EPHEMERAL, SCAVENGE)
-#            else self.partition.name,
-#            glite_arguments=slurm_resource_content,
-#        )
+    .add_jobs(Job(py36_version)\
+        .add_args(" -V")\
+        .set_stdout("demo.out")\
+        .add_pegasus_profile(\
+            runtime=1440,\
+            queue="gaia",\
+            project="gaia",\
+            glite_arguments=slurm_resource_content,\
+        )\
+    )\
     .plan(submit=True).wait()
 
