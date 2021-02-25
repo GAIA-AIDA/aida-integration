@@ -11,22 +11,31 @@ spec:
       volumes:
         - name: input-efs
           nfs:
-            server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL # THIS IS REPLACED BY LEADERBOARD PIPELINE
+            server: fs-f330b371.efs.us-east-1.amazonaws.com #m36-dryrun-source-LDC2020E11-SMALL
             path: /
         - name: output-efs
           nfs:
-            server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # # THIS IS REPLACED BY LEADERBOARD PIPELINE
+            server: fs-4bc84ac9.efs.us-east-1.amazonaws.com #teamgaia-ta1-output # sudo mount -t
             path: /
         - name: refkb-efs
           nfs:
-            server: fs-aa462d28.efs.us-east-1.amazonaws.com #m36-eval-refkb-LDC2020R20 (fs-aa462d28) - sudo mount -t efs -o tls fs-aa462d28:/ efs
+            server: fs-dacc6a58.efs.us-east-1.amazonaws.com #m36-dryrun-refkb-efs (fs-dacc6a58) - sudo mount -t efs -o tls fs-dacc6a58:/ efs
             path: /
+        #If you want to use a local folder as a volume, you can remove the NFS above and recreate them with a local volume for testing. The names need to match with the volumeMounts of the container
+        # - name: input-efs
+          # hostPath:
+          # path: "C:/some/local/input"
+        # - name: output-efs
+          # hostPath:
+          # path: "C:/some/local/output"
+
       initContainers:
 ###############################
 # Mongo DB Imports
 ###############################
       - name: gaia-mongodb-pod
-        image: panx27/edl
+        image: panx27/edl_28018
+        imagePullPolicy: IfNotPresent
         env:
         - name: REF_KB
           value: "/refkb"
@@ -49,6 +58,200 @@ spec:
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
         securityContext:
           privileged: true
+
+###############################
+# ISI AIDA-TOOLS
+###############################
+## ISI: DPN
+## see https://hub.docker.com/repository/docker/gaiaaida/aida-tools
+## python ./extract_mp4.py ./extract_mp4.docker_default.param
+      - name: isi-aida-tools
+        image: gaiaaida/aida-tools:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: INPUT_MP4_LDCC
+          value: "/input/data/mp4"
+        - name: OUTPUT_MP4
+          value: "/output/WORKING/mp4"
+        - name: log_filename
+          value: "/output/WORKING/full-text-log.txt"
+        - name: param_filename
+          value: "/output/WORKING/usc.objdet.M36.param"
+        command: ["/bin/bash", "-c"]
+        args:
+#            echo -e "input_mp4_ldcc_dir:${INPUT_MP4_LDCC} \noutput_mp4_dir:${OUTPUT_MP4} \n" &>> ${param_filename};
+         - echo `date` - "** START AIDA Tools **";
+           mkdir -p /output/WORKING/data;
+           echo `date` - "** START AIDA Tools **" &>> ${log_filename};
+           mkdir -p ${OUTPUT_MP4};
+           echo "input_mp4_ldcc_dir:" "/input/data/mp4" &>> ${param_filename};
+           echo "output_mp4_dir:" "/output/WORKING/mp4" &>> ${param_filename};
+           pwd &>> ${log_filename};
+           ls -ahl /output/WORKING &>> ${log_filename};
+           cat ${param_filename} &>> ${log_filename};
+           echo  "extract_mp4.py >>>" &>> ${log_filename};
+           /root/conda/envs/aida-env/bin/python ./extract_mp4.py ${param_filename} &>> ${log_filename};
+           ls -ahl ${OUTPUT_MP4}  &>> ${log_filename};
+           echo `date` - "END AIDA Tools" &>> ${log_filename};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+###############################
+# ISI OCR
+###############################
+## ISI: DPN; Xujun Peng
+## see: https://github.com/isi-vista/aida-integration/#ocr
+
+###############################
+# ISI ASR
+###############################
+## ISI: DPN: Xujun Peng
+## see https://github.com/isi-vista/aida-integration/#asr
+## $ docker run -it -e CUDA_VISIBLE_DEVICES=${AVAILABLE_GPU} --gpus=${AVAILABLE_GPU} --name asr  -v /host/location/output:/output gaiaaida/asr:0.2
+      - name: isi-asr
+        image: gaiaaida/asr:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START ASR **" &>> ${log};
+           ls -ahl /output/WORKING/mp4/ &>> ${log};
+           mkdir -p /output/WORKING/output/;
+           /bin/bash -c ./entrypoint.sh &>> ${log};
+           ls -ahl /output/WORKING/output/ &>> ${log};
+           echo `date` - "END ASR" &>> ${log};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Columbia University Object Detection
+################################
+## CU: Alireza Zareian
+## https://hub.docker.com/repository/docker/gaiaaida/object-detection
+## See https://github.com/isi-vista/aida-integration/#columbia-university-object-detection
+      - name: cu-object-detection
+        image: gaiaaida/object-detection:0.3
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: OBJDET_OUTPUT
+          value: "/output/WORKING/cu_objdet_results/"
+        - name: CORPUS
+          value: "/input"
+        - name: INPUT
+          value: "/input"
+        - name: OUTPUT
+          value: "/output/WORKING"
+        command: ["/bin/bash", "-c"]
+        args:
+         - echo `date` - "** START CU Object Detection **";
+           echo "INPUT "${INPUT};
+           echo "CORPUS "${CORPUS};
+           echo "OUTPUT "${OUTPUT};
+           echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
+           ls -ahl /input/docs/;
+           ls -ahl /input/data/jpg/;
+           ls -ahl /input/data/video_shot_boundaries/representative_frames/;
+           mkdir -p ${OBJDET_OUTPUT};
+           /bin/bash -c ./full_script.sh;
+           ls -ahl /output/;
+           echo "OBJDET_OUTPUT "${OBJDET_OUTPUT};
+           ls -ahl ${OBJDET_OUTPUT};
+           echo `date` - "END CU Object Detection";
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## USC Object Detection
+################################
+## USC: Haidong Zhu
+## https://hub.docker.com/repository/docker/gaiaaida/detection-grounding
+## See https://github.com/isi-vista/aida-integration/#usc-object-detection
+
+      - name: usc-object-detection
+        image: gaiaaida/detection-grounding:0.4
+        imagePullPolicy: Always
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: INPUT
+          value: "/input"
+        - name: OUTPUT
+          value: "/output"
+        - name: SHARED
+          value: "/output/WORKING"
+        - name: OBJDET_OUTPUT
+          value: "/output/WORKING/usc-object-detection/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+# Output is located at /upload/USC_Vision_Data/m18_eval/.
+# There are two folders: one using pascal voc (m18_eval_usc_vision_voc)
+# and other using oi (m18_eval_usc_vision_oi).
+# Each contains 4 files; 3 of them are about jpg, png, representative_frames,
+# and the last one just has all of them in one file.
+# this should only do the USC object detection, not the grounding.
+         - echo `date` - "** START USC Object Detection **" &>> ${log};
+           mkdir -p /upload/USC_Vision_Data/m18_eval/;
+           mkdir -p ${OBJDET_OUTPUT};
+           mkdir -p /output/WORKING/data;
+           cd /aida/src/;
+           /root/conda/envs/aida-env/bin/python ./code/smoke_test.py &>> ${log};
+           pwd &>> ${log};
+           ls -ahl ./data &>> ${log};
+           echo `date` - "aida_ds_creator" &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/aida_ds_creator.py &>> ${log};
+           find /upload/USC_Vision_Data/m18_eval -name '*.*' &>> ${log};
+           cp /output/WORKING/data/op_imgs_aida_m18_eval_dict_for_proc.json /aida/src/data/aida_m18_eval;
+           cd ./open_images_pfdet/;
+           echo `date` - "only_test" &>> ${log};
+           /root/conda/envs/aida-env/bin/python -m torch.distributed.launch --nproc_per_node=1 code/only_test.py "test_aida_1" --test_stuff.tdir=../data/aida_m18_eval/ --test_stuff.ds_info.img_dir=m18_eval/data_converted --test_stuff.ds_info.ann_file=op_imgs_aida_m18_eval_dict_for_proc.json --resume=True --resume_path='./tmp/models/aida_model_Aug17.pth' --ds='open_images' --only_test=True &>> ${log};
+           ls -ahl /upload/USC_Vision_Data/m18_eval  &>> ${log};
+           ls -ahl ${OBJDET_OUTPUT} &>> {log};
+           ls -ahl /output/WORKING/data &>> ${log};
+           cd ../;
+           echo `date` - "mrcnn_2_aida" &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/mrcnn_2_aida.py &>> ${log};
+           ls -ahl /upload/USC_Vision_Data/m18_eval  &>> ${log};
+           ls -ahl ${OBJDET_OUTPUT} &>> {log};
+           ls -ahl /output/WORKING/data &>> ${log};
+           echo `date` - "END USC Object Detection" &>> ${log_filename};
+# TODO: confirm exact files copied out.
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
 ################################
 ## setup-edl-rsd
@@ -260,6 +463,23 @@ spec:
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${rsd_source_es} ${rsd_file_list_es} &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/dir_ls.py ${ltf_source_es} ${ltf_file_list_es} &>> ${log};
             /opt/conda/envs/py36/bin/python /aida_utilities/parent_child_util.py ${parent_child_tab} ${sorted} ${timetable_tab_es} &>> ${log};
+            
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source} ${rsd_source} ${data_root}/ltf_minibatch ${data_root}/rsd_minibatch 5 &>> ${log};
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source_ru} ${rsd_source_ru} ${data_root_ru}/ltf_minibatch ${data_root_ru}/rsd_minibatch 5 &>> ${log};
+            # /opt/conda/envs/py36/bin/python /preprocessing/postprocessing_separate_files.py ${ltf_source_es} ${rsd_source_es} ${data_root_es}/ltf_minibatch ${data_root_es}/rsd_minibatch 5 &>> ${log};
+            
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/0 ${data_root}/edl_minibatch/${lang}_0.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/1 ${data_root}/edl_minibatch/${lang}_1.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/2 ${data_root}/edl_minibatch/${lang}_2.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/3 ${data_root}/edl_minibatch/${lang}_3.bio &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/ltf2bio.py ${data_root}/ltf_minibatch/4 ${data_root}/edl_minibatch/${lang}_4.bio &;
+
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/0 ${data_root}/rsd_minibatch/0_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/1 ${data_root}/rsd_minibatch/1_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/2 ${data_root}/rsd_minibatch/2_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/3 ${data_root}/rsd_minibatch/3_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+            # /opt/conda/envs/py36/bin/python /aida_utilities/dir_readlink.py ${data_root}/rsd_minibatch/4 ${data_root}/rsd_minibatch/4_rsd_lst --stanford_corenlp ${core_nlp_output_path} &;
+
             echo `date` - "END generate bio list" &>> ${log};
 
         volumeMounts:
@@ -338,6 +558,30 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START apply Stanford corenlp **" &>> ${log};
+
+            # echo "import xml.etree.ElementTree as ET" &>> ${filter_py};
+            # echo "def filterfiles(full_list, shortlist):" &>> ${filter_py};
+            # echo "  with open(full_list) as f:" &>> ${filter_py};
+            # echo "    content = f.readlines()" &>> ${filter_py};
+            # echo "  content = [x.strip() for x in content]" &>> ${filter_py};
+            # echo "  with open(shortlist, 'w') as out_file:" &>> ${filter_py};
+            # echo "    for xml_file in content:" &>> ${filter_py};
+            # echo "      if len(xml_file) > 0:" &>> ${filter_py};
+            # echo "        xml_text = ET.parse(xml_file);" &>> ${filter_py};
+            # echo "        root=xml_text.getroot();" &>> ${filter_py};
+            # echo "        max_len=0" &>> ${filter_py};
+            # echo "        sent_count=0" &>> ${filter_py};
+            # echo "        for ot in root.findall('./DOC/TEXT/SEG/ORIGINAL_TEXT'):" &>> ${filter_py};
+            # echo "          max_len=max(max_len,len(ot.text))" &>> ${filter_py};
+            # echo "          sent_count+=1" &>> ${filter_py};
+            # echo "        if max_len < 1000 and sent_count < 1000:" &>> ${filter_py};
+            # echo "          out_file.write(str(xml_file) + '\n')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/en/rsd_lst', '/output/WORKING/data/en/rsd_lst_short')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/ru/rsd_lst', '/output/WORKING/data/ru/rsd_lst_short')" &>> ${filter_py};
+            # echo "filterfiles('/output/WORKING/data/es/rsd_lst', '/output/WORKING/data/es/rsd_lst_short')" &>> ${filter_py};
+
+            # python3 filter.py &>> ${log};
+            
             java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list} -ner.docdate.useMappingFile ${timetable_tab} -properties StanfordCoreNLP_${lang}.properties -outputDirectory ${core_nlp_output_path} &
             java -mx150g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list_ru} -ner.docdate.useMappingFile ${timetable_tab_ru} -properties StanfordCoreNLP_${lang_ru}.properties -outputDirectory ${core_nlp_output_path_ru} &
             java -mx50g -cp '/stanford-corenlp-aida_0/*' edu.stanford.nlp.pipeline.StanfordCoreNLP $* -annotators 'tokenize,ssplit,pos,lemma,ner' -outputFormat json -filelist ${rsd_file_list_es} -ner.docdate.useMappingFile ${timetable_tab_es} -properties StanfordCoreNLP_${lang_es}.properties -outputDirectory ${core_nlp_output_path_es} &
@@ -405,12 +649,18 @@ spec:
             mkdir -p ${udp_dir};
             mkdir -p ${udp_dir_ru};
             mkdir -p ${udp_dir_es};
-            python bio2udp.py --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
-            echo "finish universal dependency parser for "${lang} &>> ${log};
+            # python bio2udp.py --lang ${lang} --path_bio ${edl_bio} --udp_dir ${udp_dir} &>> ${log};
+            # echo "finish universal dependency parser for "${lang} &>> ${log};
+            # python chunk_mine.py --udp_dir ${udp_dir} --text_dir ${rsd_source} --path_out_chunk ${chunk_file} &>> ${log};
+            # echo "finish chunking for "${lang} &>> ${log};
             python bio2udp.py --lang ${lang_ru} --path_bio ${edl_bio_ru} --udp_dir ${udp_dir_ru} &>> ${log};
             echo "finish universal dependency parser for "${lang_ru} &>> ${log};
             python chunk_mine.py --udp_dir ${udp_dir_ru} --text_dir ${rsd_source_ru} --path_out_chunk ${chunk_file_ru} &>> ${log};
             echo "finish chunking for "${lang_ru} &>> ${log};
+            # python bio2udp.py --lang ${lang_es} --path_bio ${edl_bio_es} --udp_dir ${udp_dir_es} &>> ${log};
+            # echo "finish universal dependency parser for "${lang_es} &>> ${log};
+            # python chunk_mine.py --udp_dir ${udp_dir_es} --text_dir ${rsd_source_es} --path_out_chunk ${chunk_file_es} &>> ${log};
+            # echo "finish chunking for "${lang_es} &>> ${log};
             echo `date` - "END universal dependency parser chunk" &>> ${log};
         volumeMounts:
           - name: input-efs
@@ -529,7 +779,7 @@ spec:
         image: limteng/oneie_aida_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: Always
         workingDir: /oneie
         env:
@@ -579,7 +829,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -626,7 +876,7 @@ spec:
 ## edl-linking
 ################################
       - name: edl-linking
-        image: panx27/edl
+        image: panx27/edl_28018
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -699,7 +949,7 @@ spec:
         image: laituan245/spanbert_entity_coref
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
@@ -734,7 +984,7 @@ spec:
         image: laituan245/es_spanbert_entity_coref
         # resources:
         #   limits:
-        #     nvidia.com/gpu: 4 # requesting 1 GPU
+        #     nvidia.com/gpu: 1 # requesting 1 GPU
         workingDir: /app
         imagePullPolicy: IfNotPresent
         env:
@@ -1010,8 +1260,8 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
-        imagePullPolicy: Always
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
         - name: lang
@@ -1063,7 +1313,6 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - echo `date` - "** START relation extraction fine (Part 1) **" &>> ${log};
-            /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang} --ltf_dir ${ltf_source} --rsd_dir ${rsd_source} --cs_fnames ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}_all.cs ${relation_result_dir}/${lang}.rel.cs ${relation_result_dir}/new_relation_${lang}.cs ${event_result_dir}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir}/${lang}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir}/${lang}.linking.freebase.fine.json --outdir ${relation_result_dir} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang_ru} --ltf_dir ${ltf_source_ru} --rsd_dir ${rsd_source_ru} --cs_fnames ${edl_output_dir_ru}/merged.cs ${edl_output_dir_ru}/filler_${lang_ru}_all.cs ${relation_result_dir_ru}/${lang_ru}.rel.cs ${relation_result_dir_ru}/new_relation_${lang_ru}.cs ${event_result_dir_ru}/event_rewrite.cs --fine_ent_type_tab ${edl_output_dir_ru}/${lang_ru}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_ru}/${lang_ru}.linking.freebase.fine.json --outdir ${relation_result_dir_ru} --fine_grained &>> ${log};
             /opt/conda/envs/py36/bin/python -u /relation_spa/FineRelationExtraction/EVALfine_grained_relations.py --lang_id ${lang_es} --ltf_dir ${ltf_source_es} --rsd_dir ${rsd_source_es} --cs_fnames ${edl_output_dir_es}/merged.cs ${edl_output_dir_es}/filler_${lang_es}_all.cs ${relation_result_dir_es}/${lang_es}.rel.cs ${relation_result_dir_es}/new_relation_${lang_es}.cs ${event_result_dir_es}/event_rewrite.cs  --fine_ent_type_tab ${edl_output_dir_es}/${lang_es}.linking.freebase.tab --fine_ent_type_json ${edl_output_dir_es}/${lang_es}.linking.freebase.fine.json --outdir ${relation_result_dir_es} --fine_grained &>> ${log};
@@ -1082,10 +1331,10 @@ spec:
 ################################
       - name: relation-extraction-event-time
         image: wenhycs/uiuc_event_time
-        # resources:
-        #   limits:
-        #     nvidia.com/gpu: 4 # requesting 1 GPU
-        imagePullPolicy: Always
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
         workingDir: /EventTimeArg
         env:
         - name: parent_child_tab_path
@@ -1128,7 +1377,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1213,7 +1462,7 @@ spec:
         image: panx27/aida20_mention
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1287,7 +1536,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1377,7 +1626,7 @@ spec:
         - name: event_result_dir
           value: "/output/WORKING/data/en/event"
         - name: core_nlp_output_path
-          value: "/output/WORKING/data/en/udp"
+          value: "/output/WORKING/data/en/corenlp"
         - name: log
           value: "/output/WORKING/full-text-log.txt"
         command: ["/bin/bash", "-c"]
@@ -1385,14 +1634,21 @@ spec:
           - echo `date` - "** START event fine grained **" &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/fine_grained_events.py ${lang} ${ltf_source} ${edl_output_dir}/${lang}.linking.freebase.fine.json ${edl_output_dir}/${lang}.linking.freebase.tab ${edl_output_dir}/merged.cs ${event_result_dir}/event_rewrite.cs ${event_result_dir}/events_fine.cs --filler_coarse ${edl_output_dir}/filler_${lang}.cs --entity_finegrain_aida ${edl_output_dir}/merged_all_fine.cs &>> ${log};
             echo "Event rule-based" &>> ${log};
+
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_framenet.py ${event_result_dir}/framenet_res ${ltf_source} ${rsd_source} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs &>> ${log};
+            # echo `date` - "Completed new_event_framenet.py" &>> ${log};
+            
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
+            # echo `date` - "Completed new_event_dependency.py" &>> ${log};
+
+            # wait &>> ${log};
+            # /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
+            # echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
+            
             wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/framenet/new_event_dependency.py ${rsd_source} ${core_nlp_output_path} ${edl_output_dir}/merged.cs ${edl_output_dir}/filler_${lang}.cs ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_framenet.cs ${event_result_dir}/events_fine_depen.cs &>> ${log};
-            echo `date` - "Completed new_event_dependency.py" &>> ${log};
-            wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /aida_utilities/pipeline_merge_m18.py --cs_fnames ${event_result_dir}/events_fine.cs ${event_result_dir}/events_fine_depen.cs --output_file ${event_result_dir}/events_fine_all.cs &>> ${log};
-            echo `date` - "Combine fine-grained typing and rule-based" &>> ${log};
-            wait &>> ${log};
-            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
+            /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine.cs ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs_tmp ${lang} &>> ${log};
             wait &>> ${log};
             /opt/conda/envs/py36/bin/python /event/aida_event/fine_grained/rewrite_args.py ${event_result_dir}/events_fine_all_clean.cs_tmp ${ltf_source} ${event_result_dir}/events_fine_all_clean.cs ${lang} &>> ${log};
             echo `date` - "END Completed rewrite-args" &>> ${log};
@@ -1477,8 +1733,8 @@ spec:
         image: laituan245/spanbert_coref
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
-        imagePullPolicy: Always
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
         - name: lang
@@ -1527,7 +1783,7 @@ spec:
         image: laituan245/es_event_coref
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         # #ENGLISH
@@ -1634,10 +1890,10 @@ spec:
 ################################
       - name: temporal-4-tuple
         image: wenhycs/uiuc_event_time
-        # resources:
-        #   limits:
-        #     nvidia.com/gpu: 4 # requesting 1 GPU
-        imagePullPolicy: Always
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
         workingDir: /EventTimeArg
         env:
         #ENGLISH
@@ -1750,7 +2006,7 @@ spec:
         image: limanling/uiuc_ie_m36
         resources:
           limits:
-            nvidia.com/gpu: 4 # requesting 1 GPU
+            nvidia.com/gpu: 1 # requesting 1 GPU
         imagePullPolicy: IfNotPresent
         env:
         #ENGLISH
@@ -1991,6 +2247,319 @@ spec:
 
 
 ################################
+## Columbia University Face, Flag, Landmark Detection
+################################
+## CU: Brian Chen
+## https://hub.docker.com/repository/docker/gaiaaida/face-building
+## See https://github.com/isi-vista/aida-integration/#columbia-university-face-flag-landmark-detection
+
+      - name: cu-face-building
+        image: gaiaaida/face-building:0.3
+        resources:
+          limits:
+            nvidia.com/gpu: 1 # requesting 1 GPU
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: FACE_OUTPUT
+          value: "/output/WORKING/cu-face-building/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+# needs UIUC text mention results in /output/WORKING/uiuc_ttl_results
+# needs CU objdet results in /output/WORKING/cu_objdet_results
+        args:
+          - echo `date` - "** START CU Face, Flag, Landmark Detection **" &>> ${log};
+            echo "INPUT "${INPUT};
+            echo "OUTPUT "${OUTPUT};
+            working_path=${OUTPUT}/WORKING;
+            txt_mention_ttl_path = working_path + 'uiuc_ttl_results';
+            det_results_path_graph = working_path + 'cu_objdet_results/aida_output_34.pkl';
+            det_results_path_img = working_path + 'cu_objdet_results/det_results_merged_34a.pkl';
+            det_results_path_kfrm = working_path + 'cu_objdet_results/det_results_merged_34b.pkl';
+            echo "FACE_OUTPUT "${FACE_OUTPUT};
+            ls -ahl /input/docs/;
+            ls -ahl /input/data/jpg/;
+            ls -ahl /input/data/video_shot_boundaries/representative_frames/;
+            mkdir -p ${FACE_OUTPUT};
+            /bin/bash -c ./full_script.sh &>> ${log};
+            ls -ahl /output/ &>> ${log};
+            ls -ahl ${FACE_OUTPUT} &>> ${log};
+            find . -name '*cu_object*' &>> ${log};
+            out_ttl=working_path + 'cu_object_FFT_ttl/';
+            ls -ahl ${out_ttl} &>> ${log};
+            echo `date` - "END CU Face, Flag, Landmark Detection" &>> ${log};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Columbia University Visual Grounding
+################################
+## CU: Xudong Lin
+## https://hub.docker.com/repository/docker/gaiaaida/grounding-merging
+## See https://github.com/isi-vista/aida-integration/#columbia-university-visual-grounding
+      - name: cu-visual-grounding
+        image: gaiaaida/grounding-merging:0.3
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: VISGRD_OUTPUT
+          value: "/output/WORKING/cu-visual-grounding/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+#TODO: python
+          - echo `date` - "** START CU Visual Grounding**" &>> ${log};
+            mkdir -p ${VISGRD_OUTPUT};
+            python ./smoke_test.py &>> ${log};
+            python ./Feature_Extraction.py &>> ${log};
+            python ./Visual_Grounding_mp.py &>> ${log};
+            source activate aida-env && which python &>> ${log};
+            ls -ahl ${VISGRD_OUTPUT};
+            find . -name '*.pickle';
+            echo `date` - "END CU Visual Grounding" &>> ${log};
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+# This should produce `entity2mention_dict_M36.pickle` `id2mentions_dict_M36.pickle`
+
+
+################################
+## USC Grounding
+################################
+## USC: Haidong Zhu
+## https://hub.docker.com/repository/docker/gaiaaida/detection-grounding
+## See https://github.com/isi-vista/aida-integration#usc-grounding
+      - name: usc-grounding
+        image: gaiaaida/detection-grounding:0.4
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: GRD_OUTPUT
+          value: "/output/WORKING/usc-grounding/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+# REQUIRES:
+# entity2mention_dict_E1.pickle
+# id2mentions_dict_E1.pickle
+# parent_children.sorted.tab
+# Grounding: 
+# First, we assume we have Columbia intermediate outputs. 
+# In particular, we need the id2mentions_dict_E1.pickle. 
+# Also, we should have sorted parent_children.tab In the data folder, see To_USC_E1 for an example.
+##python columbia_id2mentions_2_phrase_file.py --fin1=False 
+# This creates the file that the grounding system uses as input
+##python code/ground_naive.py 
+# This creates the grounding outputs
+##python columbia_id2mentions_2_phrase_file.py --fin1=True 
+#This creates the grounding outputs in the same format as Columbia
+         - echo `date` - "** START USC Grounding **" &>> ${log};
+           echo "INPUT "${INPUT};
+           echo "OUTPUT "${OUTPUT};
+           echo "GRD_OUTPUT "${GRD_OUTPUT};
+           ls -ahl /input/docs/;
+           ls -ahl /input/data/jpg/;
+           mkdir -p ${GRD_OUTPUT};
+           find /output/WORKING -name '*.pickle' &>> ${log};
+           cd /aida/src/;
+           /root/conda/envs/aida-env/bin/python ./code/columbia_idmentions_2_phrase_file.py --fin1=False &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/ground_naive.py &>> ${log};
+           /root/conda/envs/aida-env/bin/python ./code/columbia_idmentions_2_phrase_file.py --fin1=True &>> ${log};
+           find . -name 'uscvision_grounding_output_cu_format_E1.pickle' &>> ${log};
+           find . -name '*.pickle' &>> ${log};
+           RESULTS=./uscvision_grounding_output_cu_format_E1.pickle;
+           cp ${RESULTS} ${GRD_OUTPUT};
+           ls -ahl ${GRD_OUTPUT} &>> ${log};
+           echo `date` - "END USC Object Detection and Grounding" &>> ${log};
+
+# RESULTS:  uscvision_grounding_output_cu_format_E1.pickle
+# Do we need these copied too?
+# aida_grounded_bbox_scores_E1.json
+# dryrun_grounding_list_E1.json
+# m36_eval_png_detn_results_usc_vision_oi_res50.pkl
+# m36_eval_representative_frames_detn_results_usc_vision_oi_res50.pkl
+# m36_eval_detn_results_usc_vision_oi_res50.pkl
+# m36_eval_jpg_detn_results_usc_vision_oi_res50.pkl
+
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+
+################################
+## USC Scene Prediction
+################################
+## USC: Haidong Zhu
+## See notes
+## Is this to be included?
+
+################################
+## Columbia University Graph Merging
+################################
+## CU: Xudong Lin
+## https://hub.docker.com/repository/docker/gaiaaida/grounding-merging
+## See https://github.com/isi-vista/aida-integration/#columbia-university-visual-grounding
+# gaiaaida/grounding-merging
+# $ INPUT= /host_input/
+# $ OUTPUT=/host_output/
+# $ # please create the folder /columbia_vision_shared/ under the ${OUTPUT}/WORKING/ directory for output files
+# $ mkdir  ${OUTPUT}/WORKING/columbia_vision_shared/
+# please run the necessary modules (CU_Object_Detection, CU_Face/Flag/Landmark_Recognition and UIUC_Text_Pipeline)
+# download the the required result files to the shared directory: ${OUTPUT}/WORKING/columbia_vision_shared/
+# $ GPU_ID=[a single integer index to the GPU]
+# $ docker run -itd -e CUDA_VISIBLE_DEVICES=${GPU_ID} --gpus ${GPU_ID} --name aida-gm -v columbia_visual_grounding_models/:/root/models -v ${INPUT}:/root/LDC:ro -v ${OUTPUT}/WORKING/columbia_vision_shared/:/root/shared aida-grounding-merging /bin/bash
+
+      - name: cu-graph-merging
+        image: gaiaaida/grounding-merging:0.3
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: CU_VISION_SHARED
+          value: "/output/WORKING/columbia_vision_shared/"
+        - name: MERGE_OUTPUT
+          value: "/output/WORKING/columbia_vision_merged/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "** START CU Graph Merging **" &>> ${log};
+            ls -ahl ${CU_VISION_SHARED};
+            mkdir -p ${MERGE_OUTPUT};
+            python ./smoke_test.py &>> ${log};
+            python ./Graph_Merging.py &>> ${log};
+            RESULTS=./cu_graph_merging_ttl/;
+            ls -ahl ${RESULTS} &>> ${log};
+            cp -r ${RESULTS} ${MERGE_OUTPUT};
+            ls -ahl ${MERGE_OUTPUT};
+            find . -name 'cu_graph_merging_ttl' &>> ${log};
+            echo `date` - "END CU Graph Merging" &>> ${log};
+# CU graph merging result path
+#merged_graph_path = working_path + 'cu_graph_merging_ttl/' + version_folder + 'merged_ttl_'+ p_f_run + '/'
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Columbia University Sentiment
+################################
+## CU: Amith Ananthram
+## https://hub.docker.com/repository/docker/gaiaaida/sentiment
+## See https://github.com/isi-vista/aida-integration/#cu-sentiment
+
+      - name: cu-sentiment
+        image: gaiaaida/sentiment:0.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: parent_child_tab
+          value: "/input/docs/parent_children.tab"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        - name: UIUC_RESULTS_SHARED
+          value: "/output/WORKING/uiuc_ttl_results/"
+        - name: SENTIMENT_OUTPUT
+          value: "/output/WORKING/columbia_sentiment/"
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo `date` - "** START CU Sentiment **" &>> ${log};
+            ls -ahl ${UIUC_RESULTS_SHARED};
+            mkdir -p ${SENTIMENT_OUTPUT};
+            cd /sentiment/src/full-system/;
+            . ./full_script.sh /sentiment/src &>> ${log};
+            ls -ahl ${SENTIMENT_OUTPUT} &>> ${log};
+            echo `date` - "END CU Sentiment" &>> ${log};
+# output should include en.multi_sent.sponsor_assignblame.cs
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+################################
+## Augment AIF
+################################
+## ISI: Elizabeth Lee
+## See notes.  TBD.
+
+################################
+## Remove ASR
+################################
+## ISI: DPN
+## See notes.  TBD.
+
+################################
+## modify aif using entity-fishing
+################################
+## ISI: Mitchell DeHaven
+##
+## Here are the command I used the following commands to run the Docker files:
+## Creating a network to communicate between containers:
+## docker network create --driver bridge efbridge
+## TODO: compare to service network?
+## Running the entity-fishing container (I don't know that -p 8090:8090 is necessary here):
+## docker run -p 8090:8090 --network efbridge --name entity-fishing mitchelldehaven/entity-fishing:small
+
+#Running the Python scripts to modify AIF (after entity-fishing has started and is running; ~2-3 minutes):
+#docker run --network=efbridge -v /Users/mdehaven/docker_data/ldc_data_small:/input
+# -v /Users/mdehaven/docker_data/GAIA_1_final_small:/output -e INPUT=/input -e OUTPUT=/output mitchelldehaven/modify_aif:latest.
+      - name: modify-aif-entity-fishing
+        image: mitchelldehaven/modify_aif:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: log
+          value: "/output/WORKING/full-text-log.txt"
+        command: ["/bin/bash", "-c"]
+        args:
+#TODO: include command, list inputs and outputs
+          - echo `date` - "** START entity fishing **" &>> ${log};
+            echo `date` - "END entity fishing" &>> ${log};
+        volumeMounts:
+          - name: input-efs
+            mountPath: "/input"
+            readOnly: true #Input Volume for worker will be set to readOnly
+          - name: output-efs
+            mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
+
+
+      restartPolicy: Never
+
+################################
+## containers:
+################################
+      containers:
+
+
+################################
 ## CleanKB preparation
 ################################
       - name: cleankb-params
@@ -2022,19 +2591,12 @@ spec:
           - name: output-efs
             mountPath: "/output" #Please put your output here (WORKING, INTER-TA, NIST)
 
-      restartPolicy: Never
-
-################################
-## containers:
-################################
-      containers:
-
 ################################
 ## CleanKB
 ################################
       - name: cleankb
         image: limanling/aida-tools
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         workingDir: /aida-tools-java11
         env:
         - name: data_root
@@ -2057,6 +2619,8 @@ spec:
             readOnly: true
           - name: output-efs
             mountPath: "/output"
+
+
 
       imagePullSecrets:
         - name: regcred
