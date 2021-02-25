@@ -20,7 +20,6 @@ sc.add_sites(
 )
 
 saga = Site("saga", arch=Arch.X86_64, os_type=OS.LINUX)
-# TODO? partition: scavenge
 
 saga.add_directories(
     Directory(Directory.SHARED_SCRATCH, shared_scratch_dir).add_file_servers(
@@ -32,7 +31,7 @@ saga.add_env(
     key="PEGASUS_HOME", value="/nas/gaia/shared/cluster/pegasus5/pegasus-5.0.0"
 )
 
-saga.add_pegasus_profile(style="glite", auxillary_local=True)
+saga.add_pegasus_profile(style="glite", auxillary_local=True, data_configuration="sharedfs")
 saga.add_condor_profile(grid_resource="batch slurm")
 
 sc.add_sites(saga)
@@ -61,9 +60,17 @@ py36_version = Transformation(
 
 tc = tc.add_transformations(py36_version)
 
-Workflow("demo", infer_dependencies=True)\
+Workflow("demo", infer_dependencies=True, partition="scavenge")\
     .add_site_catalog(sc)\
     .add_transformation_catalog(tc)\
     .add_jobs(Job(py36_version).add_args(" -V").set_stdout("demo.out"))\
+# TODO:         job.add_pegasus_profile(
+#            runtime=self.job_time_in_minutes,
+#            queue=str(self.partition.name),
+#            project=None
+#            if self.partition.name in (EPHEMERAL, SCAVENGE)
+#            else self.partition.name,
+#            glite_arguments=slurm_resource_content,
+#        )
     .plan(submit=True).wait()
 
