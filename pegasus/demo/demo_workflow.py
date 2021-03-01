@@ -17,11 +17,21 @@ saga.add_directories(
         FileServer("file://" + local_storage_dir, Operation.ALL))
 )
 
-saga.add_env(
-    key="PEGASUS_HOME", value="/nas/gaia/shared/cluster/pegasus5/pegasus-5.0.0"
-)
-
-saga.add_pegasus_profile(style="glite", auxillary_local=True, data_configuration="sharedfs")
+saga.add_env(key="PEGASUS_HOME", value="/nas/gaia/shared/cluster/pegasus5/pegasus-5.0.0")
+saga.add_dagman_profile(retry=0)
+# saga31 has docker installed
+# srun --partition=gaia --account=gaia --nodelist=saga31 --pty bash
+saga.add_pegasus_profile(
+        style="glite", 
+        auxillary_local=True, 
+        data_configuration="sharedfs", 
+        cores=1, 
+        nodes=1, 
+        runtime="14400",
+        glite_arguments="--partition=gaia --account=gaia --nodelist=saga31", 
+        project="gaia",
+        queue="gaia",
+    )
 saga.add_condor_profile(grid_resource="batch slurm")
 
 sc.add_sites(saga)
@@ -33,8 +43,8 @@ py36_container = Container(
             Container.DOCKER,
             image="file:///nas/gaia/shared/cluster/docker/python-3-6-3.tar",
             image_site="saga",
-            arguments="--gpus=1",
-            bypass_staging=True,
+            arguments=" --gpus=1",
+            mounts=[f"{shared_scratch_dir}:/shared-data/"],
         )
 
 tc.add_containers(py36_container)
@@ -42,7 +52,7 @@ tc.add_containers(py36_container)
 py36_version = Transformation(
              "py36-version",
              site="saga",
-             pfn="/usr/local/bin/python3.6",
+             pfn="/usr/local/bin/python3.6", # This is the correct path in the python image
              is_stageable=False, # When is_stageable is set to False, this means that the transformation is installed at the given pfn inside of the container
              container=py36_container,
 )             
@@ -52,20 +62,10 @@ py36_version = Transformation(
 
 tc = tc.add_transformations(py36_version)
 
-slurm_resource_content = " --nodelist=saga31"
+job = Job(py36_version).add_args(" -V").set_stdout("/shared-data/demo.out")
 
 Workflow("demo", infer_dependencies=True)\
     .add_site_catalog(sc)\
     .add_transformation_catalog(tc)\
-    .add_jobs(Job(py36_version)\
-        .add_args(" -V")\
-        .set_stdout("/scratch/demo.out")\
-        .add_pegasus_profile(\
-            runtime=1440,\
-            queue="gaia",\
-            project="gaia",\
-            glite_arguments=slurm_resource_content,\
-        )\
-    )\
+    .add_jobs(job)\
     .plan(submit=True).wait()
-
