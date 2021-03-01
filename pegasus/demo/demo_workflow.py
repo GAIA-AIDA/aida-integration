@@ -28,7 +28,7 @@ saga.add_pegasus_profile(
         cores=1, 
         nodes=1, 
         runtime="14400",
-        glite_arguments="--partition=gaia --account=gaia --nodelist=saga31", 
+        glite_arguments="--partition=gaia --account=gaia --gpus=1 --nodelist=saga31", 
         project="gaia",
         queue="gaia",
     )
@@ -44,8 +44,10 @@ py36_container = Container(
             image="file:///nas/gaia/shared/cluster/docker/python-3-6-3.tar",
             image_site="saga",
             arguments=" --gpus=1",
-            mounts=[f"{shared_scratch_dir}:/shared-data/"],
+            mounts=[f"{shared_scratch_dir}:/shared-data"],
+            bypass_staging=True,
         )
+#props["pegasus.transfer.bypass.input.staging"] = "true"
 
 tc.add_containers(py36_container)
 
