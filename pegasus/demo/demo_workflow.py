@@ -8,23 +8,13 @@ home = Path.home().absolute()
 shared_scratch_dir = f"{home}/workflows/scratch"
 local_storage_dir = f"{home}/workflows/output"
 sc = SiteCatalog()
-sc.add_sites(
-    Site("local", arch=Arch.X86_64, os_type=OS.LINUX).add_directories(
-        Directory(Directory.SHARED_SCRATCH, shared_scratch_dir).add_file_servers(
-            FileServer("file://" + shared_scratch_dir, Operation.ALL)
-        ),
-        Directory(Directory.LOCAL_STORAGE, local_storage_dir).add_file_servers(
-            FileServer("file://" + local_storage_dir, Operation.ALL)
-        ),
-    )
-)
-
 saga = Site("saga", arch=Arch.X86_64, os_type=OS.LINUX)
 
 saga.add_directories(
     Directory(Directory.SHARED_SCRATCH, shared_scratch_dir).add_file_servers(
-        FileServer("file://" + shared_scratch_dir, Operation.ALL)
-    )
+        FileServer("file://" + shared_scratch_dir, Operation.ALL)),
+    Directory(Directory.LOCAL_STORAGE, local_storage_dir).add_file_servers(
+        FileServer("file://" + local_storage_dir, Operation.ALL))
 )
 
 saga.add_env(
@@ -36,26 +26,29 @@ saga.add_condor_profile(grid_resource="batch slurm")
 
 sc.add_sites(saga)
 
-# Container
+tc = TransformationCatalog()
+
 py36_container = Container(
-            "python36",
+            "py36-container",
             Container.DOCKER,
-            image="/nas/gaia/users/napiersk/archives/docker/python-3-6-3.tar",
+            image="file:///nas/gaia/shared/cluster/docker/python-3-6-3.tar",
             image_site="saga",
+            arguments="--gpus=1",
             bypass_staging=True,
-# ?other args: arguments, mounts, checksum, metadata
-# ?/scratch/demo.out
         )
 
-tc = TransformationCatalog().add_containers(py36_container)
+tc.add_containers(py36_container)
 
 py36_version = Transformation(
-             "py36_version",
-             pfn="/usr/local/bin/python",
+             "py36-version",
              site="saga",
+             pfn="/usr/local/bin/python3.6",
+             is_stageable=False, # When is_stageable is set to False, this means that the transformation is installed at the given pfn inside of the container
              container=py36_container,
-             is_stageable=False,
 )             
+# NOTE: similar docker example output:
+# $ docker run -it python:3.6.3 /usr/local/bin/python3.6 -V
+# Python 3.6.3
 
 tc = tc.add_transformations(py36_version)
 
@@ -66,7 +59,7 @@ Workflow("demo", infer_dependencies=True)\
     .add_transformation_catalog(tc)\
     .add_jobs(Job(py36_version)\
         .add_args(" -V")\
-        .set_stdout("/scratch/demo.out", stage_out=True, register_replica=False)\
+        .set_stdout("/scratch/demo.out")\
         .add_pegasus_profile(\
             runtime=1440,\
             queue="gaia",\
